@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional } from 'class-validator';
+import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export enum SortOption {
   EXPIRING_SOON = 'expiring_soon',
@@ -21,4 +21,15 @@ export class ListBenefitsDto {
   @IsOptional()
   @IsEnum(SortOption)
   sort: SortOption = SortOption.EXPIRING_SOON;
+
+  @ApiPropertyOptional({
+    type: String,
+    description:
+      'Filter by category (case-insensitive exact match). Omit to return all categories.',
+    example: 'Fashion',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  category?: string;
 }
