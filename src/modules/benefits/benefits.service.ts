@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { GeminiService } from '../ai/gemini.service';
 import { BenefitsRepository } from './benefits.repository';
 import { CouponResponseDto } from './dto/coupon-response.dto';
@@ -32,9 +32,26 @@ export class BenefitsService {
     return toCouponResponseDto(coupon);
   }
 
+  async findOne(id: string): Promise<CouponResponseDto> {
+    const coupon = await this.benefitsRepository.findById(id);
+    if (!coupon) {
+      throw new NotFoundException(`Coupon "${id}" was not found`);
+    }
+    return toCouponResponseDto(coupon);
+  }
+
+  async remove(id: string): Promise<void> {
+    const existing = await this.benefitsRepository.findById(id);
+    if (!existing) {
+      throw new NotFoundException(`Coupon "${id}" was not found`);
+    }
+    await this.benefitsRepository.delete(id);
+  }
+
   async findAll(dto: ListBenefitsDto): Promise<CouponResponseDto[]> {
     const coupons = await this.benefitsRepository.findAll(
       dto.sort ?? SortOption.EXPIRING_SOON,
+      dto.category,
     );
     return toCouponResponseDtoList(coupons);
   }
