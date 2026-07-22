@@ -1,9 +1,19 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   ApiBadGatewayResponse,
   ApiBadRequestResponse,
   ApiCreatedResponse,
+  ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiServiceUnavailableResponse,
   ApiTags,
   ApiUnprocessableEntityResponse,
@@ -11,11 +21,30 @@ import {
 import { BenefitsService } from './benefits.service';
 import { CouponResponseDto } from './dto/coupon-response.dto';
 import { ImportBenefitDto } from './dto/import-benefit.dto';
+import { ListBenefitsDto, SortOption } from './dto/list-benefits.dto';
 
 @ApiTags('benefits')
 @Controller('benefits')
 export class BenefitsController {
   constructor(private readonly benefitsService: BenefitsService) {}
+
+  @Get()
+  @ApiOperation({
+    summary: 'List coupons with sorting',
+    description:
+      'Returns coupons sorted by the requested option. Defaults to expiring_soon (unexpired coupons, soonest first).',
+  })
+  @ApiQuery({
+    name: 'sort',
+    enum: SortOption,
+    enumName: 'SortOption',
+    required: false,
+    description: 'Sort order. Defaults to expiring_soon.',
+  })
+  @ApiOkResponse({ type: [CouponResponseDto] })
+  listBenefits(@Query() dto: ListBenefitsDto): Promise<CouponResponseDto[]> {
+    return this.benefitsService.findAll(dto);
+  }
 
   @Post('import')
   @HttpCode(HttpStatus.CREATED)
