@@ -42,12 +42,28 @@ export class GeminiService {
     this.assertConfigured();
 
     const todayIsoDate = new Date().toISOString().slice(0, 10);
-    const outputText = await this.generateJsonText({
+    const outputText = await this.generateStructuredJson({
       contents: buildCouponTextExtractionPrompt(rawText, todayIsoDate),
       systemInstruction: COUPON_EXTRACTION_SYSTEM_INSTRUCTION,
+      responseSchema: couponExtractionResponseSchema,
+      errorMessage: 'Failed to extract coupon via Gemini',
     });
 
     return this.parseAndValidateExtraction(outputText);
+  }
+
+  /**
+   * Low-level structured JSON generation for intent / extraction callers.
+   * Callers own Zod validation of the parsed payload.
+   */
+  async generateStructuredJson(params: {
+    contents: unknown;
+    systemInstruction: string;
+    responseSchema: object;
+    errorMessage?: string;
+  }): Promise<string> {
+    this.assertConfigured();
+    return this.generateJsonText(params);
   }
 
   async extractCouponFromImage(image: Buffer): Promise<CouponExtraction> {
@@ -71,6 +87,8 @@ export class GeminiService {
         { text: buildCouponImageExtractionPrompt(todayIsoDate) },
       ],
       systemInstruction: COUPON_EXTRACTION_SYSTEM_INSTRUCTION,
+      responseSchema: couponExtractionResponseSchema,
+      errorMessage: 'Failed to extract coupon via Gemini',
     });
 
     return this.parseAndValidateExtraction(outputText);
@@ -108,6 +126,8 @@ export class GeminiService {
   private async generateJsonText(params: {
     contents: unknown;
     systemInstruction: string;
+    responseSchema: object;
+    errorMessage?: string;
   }): Promise<string> {
     try {
       const response = await this.client.models.generateContent({
@@ -117,7 +137,7 @@ export class GeminiService {
           systemInstruction: params.systemInstruction,
           temperature: 0,
           responseMimeType: 'application/json',
-          responseSchema: couponExtractionResponseSchema,
+          responseSchema: params.responseSchema,
           abortSignal: AbortSignal.timeout(this.timeoutMs),
         },
       });
@@ -129,7 +149,10 @@ export class GeminiService {
 
       return text;
     } catch (error) {
-      this.rethrowGeminiError(error, 'Failed to extract coupon via Gemini');
+      this.rethrowGeminiError(
+        error,
+        params.errorMessage ?? 'Failed to generate structured JSON via Gemini',
+      );
     }
   }
 
