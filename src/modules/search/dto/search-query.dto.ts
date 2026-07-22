@@ -1,9 +1,15 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
 
 export class SearchQueryDto {
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty({
+    description:
+      'Search query — matched against brand, title, category, and couponCode (case-insensitive substring).',
+    example: 'myntra',
+    maxLength: 255,
+  })
   @IsString()
-  q?: string;
+  @IsNotEmpty()
+  @MaxLength(255)
+  q!: string;
 }
