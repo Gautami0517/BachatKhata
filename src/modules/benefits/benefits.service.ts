@@ -3,6 +3,7 @@ import { Coupon } from '@prisma/client';
 import { GeminiService } from '../ai/gemini.service';
 import { BenefitsRepository } from './benefits.repository';
 import { ImportBenefitDto } from './dto/import-benefit.dto';
+import { ListBenefitsDto, SortOption } from './dto/list-benefits.dto';
 import { normalizeCouponExtraction } from './normalizers/coupon.normalizer';
 
 @Injectable()
@@ -26,5 +27,11 @@ export class BenefitsService {
     });
 
     return this.benefitsRepository.create(couponData);
+  }
+
+  async findAll(dto: ListBenefitsDto): Promise<Coupon[]> {
+    return this.benefitsRepository.findAll(
+      dto.sort ?? SortOption.EXPIRING_SOON,
+    );
   }
 }

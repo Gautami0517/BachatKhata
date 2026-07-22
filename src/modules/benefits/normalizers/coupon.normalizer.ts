@@ -52,7 +52,10 @@ function normalizeDiscountType(value: string | null): DiscountType {
     return DiscountType.OTHER;
   }
 
-  const normalized = value.trim().toUpperCase().replace(/[\s-]+/g, '_');
+  const normalized = value
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, '_');
 
   if (DISCOUNT_TYPE_VALUES.has(normalized)) {
     return normalized as DiscountType;
