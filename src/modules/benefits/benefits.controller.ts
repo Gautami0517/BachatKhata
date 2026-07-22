@@ -35,6 +35,7 @@ import { CouponResponseDto } from './dto/coupon-response.dto';
 import { ImportBenefitDto } from './dto/import-benefit.dto';
 import { ListBenefitsDto, SortOption } from './dto/list-benefits.dto';
 import { SaveExtractedDto } from './dto/save-extracted.dto';
+import { Public } from '../auth/decorators/public.decorator';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_MIME = new Set([
@@ -45,6 +46,7 @@ const ALLOWED_IMAGE_MIME = new Set([
 ]);
 
 @ApiTags('benefits')
+@Public()
 @Controller('benefits')
 export class BenefitsController {
   constructor(private readonly benefitsService: BenefitsService) {}

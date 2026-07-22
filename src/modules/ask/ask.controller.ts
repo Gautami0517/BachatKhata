@@ -10,8 +10,10 @@ import {
 import { AskService } from './ask.service';
 import { AskBenefitDto } from './dto/ask-benefit.dto';
 import { AskResponseDto } from './dto/ask-response.dto';
+import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('benefits')
+@Public()
 @Controller('benefits')
 export class AskController {
   constructor(private readonly askService: AskService) {}

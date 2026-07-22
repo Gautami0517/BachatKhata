@@ -41,3 +41,54 @@ model Coupon {
   @@index([brand])
   @@map("coupons")
 }
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum OtpPurpose {
+  LOGIN
+}
+
+model User {
+  id            String         @id @default(uuid()) @db.Uuid
+  email         String         @unique
+  name          String
+  isVerified    Boolean        @default(false)
+  status        UserStatus     @default(ACTIVE)
+  refreshTokens RefreshToken[]
+  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
+
+  @@map("users")
+}
+
+model OtpCode {
+  id         String     @id @default(uuid()) @db.Uuid
+  email      String
+  codeHash   String
+  purpose    OtpPurpose
+  attempts   Int        @default(0)
+  consumedAt DateTime?  @db.Timestamptz(3)
+  expiresAt  DateTime   @db.Timestamptz(3)
+  createdAt  DateTime   @default(now()) @db.Timestamptz(3)
+
+  @@index([email, createdAt])
+  @@map("otp_codes")
+}
+
+model RefreshToken {
+  id           String      @id @default(uuid()) @db.Uuid
+  userId       String      @db.Uuid
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash    String      @unique
+  familyId     String      @db.Uuid
+  replacedById String?     @db.Uuid
+  revokedAt    DateTime?   @db.Timestamptz(3)
+  expiresAt    DateTime    @db.Timestamptz(3)
+  createdAt    DateTime    @default(now()) @db.Timestamptz(3)
+
+  @@index([userId, familyId])
+  @@map("refresh_tokens")
+}

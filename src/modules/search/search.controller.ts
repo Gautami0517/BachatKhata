@@ -9,8 +9,10 @@ import {
 import { CouponResponseDto } from '../benefits/dto/coupon-response.dto';
 import { SearchService } from './search.service';
 import { SearchQueryDto } from './dto/search-query.dto';
+import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('search')
+@Public()
 @Controller('search')
 export class SearchController {
   constructor(private readonly searchService: SearchService) {}

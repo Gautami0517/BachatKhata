@@ -14,6 +14,11 @@ enum NodeEnvironment {
   Test = 'test',
 }
 
+enum MailProvider {
+  Console = 'console',
+  Resend = 'resend',
+}
+
 class EnvironmentVariables {
   @IsEnum(NodeEnvironment)
   @IsOptional()
@@ -42,6 +47,38 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   SWAGGER_PATH?: string;
+
+  @IsString()
+  @MinLength(32)
+  JWT_SECRET!: string;
+
+  @IsString()
+  @IsOptional()
+  JWT_ACCESS_EXPIRES?: string;
+
+  @IsString()
+  @IsOptional()
+  JWT_REFRESH_EXPIRES?: string;
+
+  @IsString()
+  @IsOptional()
+  JWT_ISSUER?: string;
+
+  @IsEnum(MailProvider)
+  @IsOptional()
+  MAIL_PROVIDER?: MailProvider;
+
+  @IsString()
+  @IsOptional()
+  MAIL_FROM_EMAIL?: string;
+
+  @IsString()
+  @IsOptional()
+  MAIL_FROM_NAME?: string;
+
+  @IsString()
+  @IsOptional()
+  RESEND_API_KEY?: string;
 }
 
 export function validate(config: Record<string, unknown>) {
