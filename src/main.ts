@@ -32,6 +32,13 @@ async function bootstrap() {
 
   app.useGlobalFilters(new AllExceptionsFilter());
 
+  // Allow the Vite frontend (and future deployed origins) to call the API.
+  app.enableCors({
+    origin: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
   const swaggerConfig = new DocumentBuilder()
     .setTitle('BachatKhata API')
     .setDescription('AI-powered Financial Memory Agent')

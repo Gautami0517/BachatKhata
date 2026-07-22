@@ -4,8 +4,8 @@ import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
 export class SearchQueryDto {
   @ApiProperty({
     description:
-      'Search query — matched against brand, title, category, and couponCode (case-insensitive substring).',
-    example: 'myntra',
+      'Search query — matched against merchant, brand, title, and rawText (case-insensitive substring).',
+    example: 'myn',
     maxLength: 255,
   })
   @IsString()

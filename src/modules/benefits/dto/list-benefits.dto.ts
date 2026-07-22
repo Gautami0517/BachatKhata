@@ -6,6 +6,7 @@ export enum SortOption {
   NEWEST = 'newest',
   HIGHEST_DISCOUNT_PCT = 'highest_discount_pct',
   HIGHEST_SAVINGS = 'highest_savings',
+  /** Sort by brand A→Z, then merchant A→Z (nulls last). */
   BRAND_AZ = 'brand_az',
   CATEGORY = 'category',
 }

@@ -23,6 +23,7 @@ const nullableNumber = z
  * Zod schema for Gemini Extraction DTO (pre-normalization).
  */
 export const couponExtractionSchema: z.ZodType<CouponExtraction> = z.object({
+  merchant: nullableTrimmedString,
   brand: nullableTrimmedString,
   title: nullableTrimmedString,
   category: nullableTrimmedString,
@@ -31,6 +32,6 @@ export const couponExtractionSchema: z.ZodType<CouponExtraction> = z.object({
   minimumSpend: nullableNumber,
   maximumDiscount: nullableNumber,
   couponCode: nullableTrimmedString,
-  expiry: nullableTrimmedString,
+  expiryDate: nullableTrimmedString,
   source: nullableTrimmedString,
 });

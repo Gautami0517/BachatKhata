@@ -20,6 +20,7 @@ enum DiscountType {
 
 model Coupon {
   id              String       @id @default(uuid()) @db.Uuid
+  merchant        String?
   brand           String?
   title           String
   category        String?
@@ -36,5 +37,7 @@ model Coupon {
 
   @@index([couponCode])
   @@index([expiryDate])
+  @@index([merchant])
+  @@index([brand])
   @@map("coupons")
 }

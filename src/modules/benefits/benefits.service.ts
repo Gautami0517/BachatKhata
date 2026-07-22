@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { Coupon } from '@prisma/client';
 import { GeminiService } from '../ai/gemini.service';
 import { BenefitsRepository } from './benefits.repository';
+import { CouponResponseDto } from './dto/coupon-response.dto';
 import { ImportBenefitDto } from './dto/import-benefit.dto';
 import { ListBenefitsDto, SortOption } from './dto/list-benefits.dto';
+import {
+  toCouponResponseDto,
+  toCouponResponseDtoList,
+} from './mappers/coupon.mapper';
 import { normalizeCouponExtraction } from './normalizers/coupon.normalizer';
 
 @Injectable()
@@ -13,25 +17,25 @@ export class BenefitsService {
     private readonly benefitsRepository: BenefitsRepository,
   ) {}
 
-  async importBenefit(dto: ImportBenefitDto): Promise<Coupon> {
+  async importBenefit(dto: ImportBenefitDto): Promise<CouponResponseDto> {
     const rawText = dto.rawText.trim();
     const source = dto.source?.trim() || 'user_paste';
 
-    // Gemini → Extraction DTO (Zod-validated inside GeminiService)
     const extraction = await this.geminiService.extractCoupon(rawText);
 
-    // Extraction DTO → Benefit entity / Prisma create input
     const couponData = normalizeCouponExtraction(extraction, {
       rawText,
       source,
     });
 
-    return this.benefitsRepository.create(couponData);
+    const coupon = await this.benefitsRepository.create(couponData);
+    return toCouponResponseDto(coupon);
   }
 
-  async findAll(dto: ListBenefitsDto): Promise<Coupon[]> {
-    return this.benefitsRepository.findAll(
+  async findAll(dto: ListBenefitsDto): Promise<CouponResponseDto[]> {
+    const coupons = await this.benefitsRepository.findAll(
       dto.sort ?? SortOption.EXPIRING_SOON,
     );
+    return toCouponResponseDtoList(coupons);
   }
 }

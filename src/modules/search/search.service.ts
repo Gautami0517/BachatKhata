@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { Coupon } from '@prisma/client';
+import { CouponResponseDto } from '../benefits/dto/coupon-response.dto';
+import { toCouponResponseDtoList } from '../benefits/mappers/coupon.mapper';
 import { SearchRepository } from './search.repository';
 import { SearchQueryDto } from './dto/search-query.dto';
 
@@ -7,7 +8,8 @@ import { SearchQueryDto } from './dto/search-query.dto';
 export class SearchService {
   constructor(private readonly searchRepository: SearchRepository) {}
 
-  async search(dto: SearchQueryDto): Promise<Coupon[]> {
-    return this.searchRepository.search(dto.q.trim());
+  async search(dto: SearchQueryDto): Promise<CouponResponseDto[]> {
+    const coupons = await this.searchRepository.search(dto.q.trim());
+    return toCouponResponseDtoList(coupons);
   }
 }

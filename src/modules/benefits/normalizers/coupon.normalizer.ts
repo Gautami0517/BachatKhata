@@ -30,21 +30,48 @@ export function normalizeCouponExtraction(
   );
 
   return {
-    brand: emptyToNull(extraction.brand),
-    title,
-    category: emptyToNull(extraction.category),
+    merchant: normalizeProperName(extraction.merchant),
+    brand: normalizeProperName(extraction.brand),
+    title: collapseWhitespace(title),
+    category: normalizeProperName(extraction.category),
     discountType: normalizeDiscountType(extraction.discountType),
     discountValue,
     minimumSpend,
     maximumDiscount,
     couponCode: emptyToNull(extraction.couponCode),
-    expiryDate: normalizeExpiry(extraction.expiry),
+    expiryDate: normalizeExpiry(extraction.expiryDate),
     source:
       emptyToNull(context.source) ??
       emptyToNull(extraction.source) ??
       'user_paste',
     rawText: context.rawText.trim(),
   };
+}
+
+/**
+ * Trim, collapse spaces, and title-case merchant/brand-style names.
+ * amazon → Amazon, MYNTRA → Myntra, ripple safe → Ripple Safe
+ */
+export function normalizeProperName(
+  value: string | null | undefined,
+): string | null {
+  const trimmed = emptyToNull(value);
+  if (!trimmed) {
+    return null;
+  }
+
+  return collapseWhitespace(trimmed)
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+export function computeDisplayName(coupon: {
+  brand: string | null;
+  merchant: string | null;
+  title: string;
+}): string {
+  return coupon.brand ?? coupon.merchant ?? coupon.title;
 }
 
 function normalizeDiscountType(value: string | null): DiscountType {
@@ -111,6 +138,10 @@ function normalizeNonNegativeNumber(value: number | null): number | null {
   }
 
   return value;
+}
+
+function collapseWhitespace(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
 }
 
 function emptyToNull(value: string | null | undefined): string | null {

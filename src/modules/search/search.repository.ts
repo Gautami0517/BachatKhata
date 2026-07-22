@@ -13,14 +13,19 @@ export class SearchRepository {
       SELECT *
       FROM "coupons"
       WHERE (
-        "brand"        ILIKE ${term}
-        OR "title"       ILIKE ${term}
-        OR "category"    ILIKE ${term}
-        OR "couponCode"  ILIKE ${term}
+        "merchant" ILIKE ${term}
+        OR "brand"    ILIKE ${term}
+        OR "title"    ILIKE ${term}
+        OR "rawText"  ILIKE ${term}
       )
       AND ("expiryDate" IS NULL OR "expiryDate" >= NOW())
       ORDER BY
-        CASE WHEN "brand" ILIKE ${term} THEN 0 ELSE 1 END,
+        CASE
+          WHEN "brand"    ILIKE ${term} THEN 0
+          WHEN "merchant" ILIKE ${term} THEN 1
+          WHEN "title"    ILIKE ${term} THEN 2
+          ELSE 3
+        END,
         "expiryDate" ASC NULLS LAST,
         "createdAt" DESC
     `);

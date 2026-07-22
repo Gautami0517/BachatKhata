@@ -7,6 +7,7 @@ import { Type } from '@google/genai';
 export const couponExtractionResponseSchema = {
   type: Type.OBJECT,
   properties: {
+    merchant: { type: Type.STRING, nullable: true },
     brand: { type: Type.STRING, nullable: true },
     title: { type: Type.STRING, nullable: true },
     category: { type: Type.STRING, nullable: true },
@@ -15,10 +16,11 @@ export const couponExtractionResponseSchema = {
     minimumSpend: { type: Type.NUMBER, nullable: true },
     maximumDiscount: { type: Type.NUMBER, nullable: true },
     couponCode: { type: Type.STRING, nullable: true },
-    expiry: { type: Type.STRING, nullable: true },
+    expiryDate: { type: Type.STRING, nullable: true },
     source: { type: Type.STRING, nullable: true },
   },
   required: [
+    'merchant',
     'brand',
     'title',
     'category',
@@ -27,7 +29,7 @@ export const couponExtractionResponseSchema = {
     'minimumSpend',
     'maximumDiscount',
     'couponCode',
-    'expiry',
+    'expiryDate',
     'source',
   ],
 };

@@ -19,15 +19,15 @@ export class SearchController {
   @ApiOperation({
     summary: 'Search coupons by text',
     description:
-      'Case-insensitive substring search across brand, title, category, and couponCode. ' +
-      'Brand matches are surfaced first; remaining results are sorted by soonest expiry. ' +
+      'Case-insensitive substring search across merchant, brand, title, and rawText. ' +
+      'Brand matches rank first, then merchant, then title; remaining by soonest expiry. ' +
       'Already-expired coupons are excluded by default.',
   })
   @ApiQuery({
     name: 'q',
     type: String,
     description: 'Search term (required, non-empty, up to 255 chars).',
-    example: 'myntra',
+    example: 'myn',
   })
   @ApiOkResponse({ type: [CouponResponseDto] })
   @ApiBadRequestResponse({

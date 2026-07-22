@@ -58,6 +58,7 @@ export class BenefitsRepository {
         return this.prisma.coupon.findMany({
           orderBy: [
             { brand: { sort: 'asc', nulls: 'last' } },
+            { merchant: { sort: 'asc', nulls: 'last' } },
             { expiryDate: { sort: 'asc', nulls: 'last' } },
           ],
         });

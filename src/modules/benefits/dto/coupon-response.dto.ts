@@ -5,8 +5,28 @@ export class CouponResponseDto {
   @ApiProperty({ format: 'uuid' })
   id!: string;
 
-  @ApiPropertyOptional({ nullable: true, type: String })
+  @ApiPropertyOptional({
+    nullable: true,
+    type: String,
+    description: 'Platform/retailer where the benefit is redeemed',
+    example: 'Myntra',
+  })
+  merchant!: string | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    type: String,
+    description: 'Product brand being promoted, if any',
+    example: 'Nike',
+  })
   brand!: string | null;
+
+  @ApiProperty({
+    description:
+      'UI display label: brand if present, else merchant, else title',
+    example: 'Nike',
+  })
+  displayName!: string;
 
   @ApiProperty()
   title!: string;

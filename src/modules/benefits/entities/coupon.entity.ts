@@ -4,6 +4,7 @@ export { DiscountType };
 
 export type CouponEntity = {
   id: string;
+  merchant: string | null;
   brand: string | null;
   title: string;
   category: string | null;
