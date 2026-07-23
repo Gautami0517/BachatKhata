@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { GeminiService } from '../ai/gemini.service';
 import { BenefitScoringService } from './benefit-scoring.service';
@@ -43,8 +47,24 @@ export class BenefitsService {
       }),
     );
 
-    const coupon = await this.benefitsRepository.create(couponData);
-    return toCouponResponseDto(coupon);
+    try {
+      const coupon = await this.benefitsRepository.create(couponData);
+      return toCouponResponseDto(coupon);
+    } catch (error) {
+      if (this.isUniqueViolation(error) && couponData.couponCode) {
+        const existing =
+          await this.benefitsRepository.findByUserAndCodeAndExpiry(
+            userId,
+            couponData.couponCode,
+            (couponData.expiryDate as Date | null) ?? null,
+          );
+        throw new ConflictException({
+          message: 'You already have this coupon',
+          existing: existing ? toCouponResponseDto(existing) : null,
+        });
+      }
+      throw error;
+    }
   }
 
   async findOne(id: string, userId: string): Promise<CouponResponseDto> {
@@ -168,8 +188,31 @@ export class BenefitsService {
       }),
     );
 
-    const coupon = await this.benefitsRepository.create(couponData);
-    return toCouponResponseDto(coupon);
+    try {
+      const coupon = await this.benefitsRepository.create(couponData);
+      return toCouponResponseDto(coupon);
+    } catch (error) {
+      if (this.isUniqueViolation(error) && couponData.couponCode) {
+        const existing =
+          await this.benefitsRepository.findByUserAndCodeAndExpiry(
+            userId,
+            couponData.couponCode,
+            (couponData.expiryDate as Date | null) ?? null,
+          );
+        throw new ConflictException({
+          message: 'You already have this coupon',
+          existing: existing ? toCouponResponseDto(existing) : null,
+        });
+      }
+      throw error;
+    }
+  }
+
+  private isUniqueViolation(error: unknown): boolean {
+    return (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    );
   }
 
   /** Shared scoring step for text import and image save. */

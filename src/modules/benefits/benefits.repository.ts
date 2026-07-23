@@ -39,6 +39,16 @@ export class BenefitsRepository {
       .then(() => this.findById(id, userId));
   }
 
+  findByUserAndCodeAndExpiry(
+    userId: string,
+    couponCode: string,
+    expiryDate: Date | null,
+  ): Promise<Coupon | null> {
+    return this.prisma.coupon.findFirst({
+      where: { userId, couponCode, expiryDate },
+    });
+  }
+
   async findAll(
     sort: SortOption = SortOption.EXPIRING_SOON,
     category: string | undefined,
