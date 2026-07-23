@@ -6,7 +6,8 @@ import { AskResponseDto, AskResultDto } from './dto/ask-response.dto';
 import { RankedCoupon } from './search.ranker';
 import { SearchService } from './search.service';
 
-const NO_RESULTS_MESSAGE = 'No matching benefits found in your Benefit Vault.';
+const NO_RESULTS_MESSAGE =
+  'No matching benefits found in your Benefit Vault.';
 
 @Injectable()
 export class AskService {
@@ -18,18 +19,17 @@ export class AskService {
   async ask(dto: AskBenefitDto, userId: string): Promise<AskResponseDto> {
     const query = dto.query.trim();
 
-    // One Gemini call — intent only
     const intent = await this.aiIntentService.extractIntent(query);
+    const { results, matchType, message } =
+      await this.searchService.searchByIntent(intent, userId);
 
-    // Deterministic DB search + ranking
-    const ranked = await this.searchService.searchByIntent(intent, userId);
-
-    if (ranked.length === 0) {
+    if (results.length === 0) {
       return {
         query,
         intent,
         totalResults: 0,
         results: [],
+        matchType: null,
         message: NO_RESULTS_MESSAGE,
       };
     }
@@ -37,8 +37,10 @@ export class AskService {
     return {
       query,
       intent,
-      totalResults: ranked.length,
-      results: ranked.map((coupon) => this.toResultDto(coupon)),
+      totalResults: results.length,
+      results: results.map((coupon) => this.toResultDto(coupon)),
+      matchType,
+      ...(message ? { message } : {}),
     };
   }
 

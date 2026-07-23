@@ -84,8 +84,19 @@ export class AskResponseDto {
   results!: AskResultDto[];
 
   @ApiPropertyOptional({
-    description: 'Present when no benefits match the intent',
-    example: 'No matching benefits found in your Benefit Vault.',
+    nullable: true,
+    enum: ['product', 'category_fallback', 'general'],
+    description:
+      'How results were matched. category_fallback means no product hits; showing same-category offers.',
+    example: 'category_fallback',
+  })
+  matchType?: 'product' | 'category_fallback' | 'general' | null;
+
+  @ApiPropertyOptional({
+    description:
+      'Present when empty, or when returning category fallback after no product-specific hits.',
+    example:
+      'No benefits found specifically for Shoes, but here are similar offers in Fashion.',
   })
   message?: string;
 }

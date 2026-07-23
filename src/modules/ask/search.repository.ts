@@ -5,20 +5,100 @@ import { AskIntent } from './dto/ask-intent.interface';
 
 /**
  * Deterministic Prisma queries for ask / recommendation search.
- * No AI calls. No ranking.
+ * No AI calls. No ranking. Always scoped to the authenticated user.
  */
 @Injectable()
 export class SearchRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Fetch unexpired coupons that match any extracted intent signal.
+   * Product-first candidates: must match product on title/rawText.
+   * Brand/merchant are AND constraints when present.
    */
-  async findCandidates(intent: AskIntent, userId: string): Promise<Coupon[]> {
-    const filters = this.buildMatchFilters(intent);
+  findProductCandidates(
+    intent: AskIntent,
+    userId: string,
+  ): Promise<Coupon[]> {
+    if (!intent.product) {
+      return Promise.resolve([]);
+    }
+
+    const andFilters: Prisma.CouponWhereInput[] = [
+      { userId },
+      this.unexpiredFilter(),
+      {
+        OR: [
+          { title: { contains: intent.product, mode: 'insensitive' } },
+          { rawText: { contains: intent.product, mode: 'insensitive' } },
+        ],
+      },
+    ];
+
+    const brandFilter = this.brandFilter(intent.brand);
+    if (brandFilter) {
+      andFilters.push(brandFilter);
+    }
+
+    const merchantFilter = this.merchantFilter(intent.merchant);
+    if (merchantFilter) {
+      andFilters.push(merchantFilter);
+    }
+
+    const spendFilter = this.buildSpendFilter(intent.expectedSpend);
+    if (spendFilter) {
+      andFilters.push(spendFilter);
+    }
+
+    return this.prisma.coupon.findMany({
+      where: { AND: andFilters },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Category-only candidates (used as fallback when product has no hits).
+   */
+  findCategoryCandidates(
+    intent: AskIntent,
+    userId: string,
+  ): Promise<Coupon[]> {
+    if (!intent.category) {
+      return Promise.resolve([]);
+    }
+
+    const andFilters: Prisma.CouponWhereInput[] = [
+      { userId },
+      this.unexpiredFilter(),
+      {
+        OR: [
+          { category: { equals: intent.category, mode: 'insensitive' } },
+          { category: { contains: intent.category, mode: 'insensitive' } },
+        ],
+      },
+    ];
+
+    const spendFilter = this.buildSpendFilter(intent.expectedSpend);
+    if (spendFilter) {
+      andFilters.push(spendFilter);
+    }
+
+    return this.prisma.coupon.findMany({
+      where: { AND: andFilters },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * General candidates when intent has no product (merchant / brand / category OR).
+   */
+  findGeneralCandidates(
+    intent: AskIntent,
+    userId: string,
+  ): Promise<Coupon[]> {
+    const filters = this.buildGeneralMatchFilters(intent);
 
     if (filters.length === 0) {
-      return [];
+      return Promise.resolve([]);
     }
 
     const spendFilter = this.buildSpendFilter(intent.expectedSpend);
@@ -27,9 +107,7 @@ export class SearchRepository {
       where: {
         AND: [
           { userId },
-          {
-            OR: [{ expiryDate: null }, { expiryDate: { gte: new Date() } }],
-          },
+          this.unexpiredFilter(),
           { OR: filters },
           ...(spendFilter ? [spendFilter] : []),
         ],
@@ -38,7 +116,9 @@ export class SearchRepository {
     });
   }
 
-  private buildMatchFilters(intent: AskIntent): Prisma.CouponWhereInput[] {
+  private buildGeneralMatchFilters(
+    intent: AskIntent,
+  ): Prisma.CouponWhereInput[] {
     const filters: Prisma.CouponWhereInput[] = [];
 
     if (intent.merchant) {
@@ -64,22 +144,43 @@ export class SearchRepository {
       });
     }
 
-    if (intent.product) {
-      filters.push({
-        title: { contains: intent.product, mode: 'insensitive' },
-      });
-      // rawText stands in for description when no dedicated description field exists
-      filters.push({
-        rawText: { contains: intent.product, mode: 'insensitive' },
-      });
-    }
-
     return filters;
   }
 
-  /**
-   * Soft budget filter: keep offers usable within expected spend.
-   */
+  private brandFilter(brand: string | null): Prisma.CouponWhereInput | null {
+    if (!brand) {
+      return null;
+    }
+
+    return {
+      OR: [
+        { brand: { equals: brand, mode: 'insensitive' } },
+        { brand: { contains: brand, mode: 'insensitive' } },
+      ],
+    };
+  }
+
+  private merchantFilter(
+    merchant: string | null,
+  ): Prisma.CouponWhereInput | null {
+    if (!merchant) {
+      return null;
+    }
+
+    return {
+      OR: [
+        { merchant: { equals: merchant, mode: 'insensitive' } },
+        { merchant: { contains: merchant, mode: 'insensitive' } },
+      ],
+    };
+  }
+
+  private unexpiredFilter(): Prisma.CouponWhereInput {
+    return {
+      OR: [{ expiryDate: null }, { expiryDate: { gte: new Date() } }],
+    };
+  }
+
   private buildSpendFilter(
     expectedSpend: number | null,
   ): Prisma.CouponWhereInput | null {
