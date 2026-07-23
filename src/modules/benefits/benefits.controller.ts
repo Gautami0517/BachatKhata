@@ -32,6 +32,12 @@ import {
 import { BenefitsService } from './benefits.service';
 import { CouponPreviewDto } from './dto/coupon-preview.dto';
 import { CouponResponseDto } from './dto/coupon-response.dto';
+import {
+  BrandsResponseDto,
+  CategoriesResponseDto,
+  FilterOptionsQueryDto,
+  MerchantsResponseDto,
+} from './dto/filter-options.dto';
 import { ImportBenefitDto } from './dto/import-benefit.dto';
 import {
   ListBenefitsDto,
@@ -41,7 +47,6 @@ import {
 import { SaveExtractedDto } from './dto/save-extracted.dto';
 import { CurrentUser } from '../auth/auth.service';
 import type { AuthenticatedUser } from '../auth/auth.service';
-import { CANONICAL_CATEGORIES } from '../../common/categories/categories';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_MIME = new Set([
@@ -58,10 +63,11 @@ export class BenefitsController {
 
   @Get()
   @ApiOperation({
-    summary: 'List coupons with sorting and optional category filter',
+    summary: 'List coupons with sorting and optional filters',
     description:
       'Returns coupons sorted by the requested option. Defaults to expiring_soon (unexpired coupons, soonest first). ' +
-      'Optionally filter by category (case-insensitive exact match).',
+      'Optionally filter by one or more categories, merchants, and/or brands (case-insensitive). ' +
+      'Repeat a query param or comma-separate values, e.g. category=Fashion&category=Food or category=Fashion,Food.',
   })
   @ApiQuery({
     name: 'sort',
@@ -74,7 +80,25 @@ export class BenefitsController {
     name: 'category',
     type: String,
     required: false,
-    description: 'Case-insensitive category filter.',
+    isArray: true,
+    description:
+      'One or more categories. Repeat param or comma-separate. Matches ANY selected value.',
+  })
+  @ApiQuery({
+    name: 'merchant',
+    type: String,
+    required: false,
+    isArray: true,
+    description:
+      'One or more merchants. Repeat param or comma-separate. Matches ANY selected value.',
+  })
+  @ApiQuery({
+    name: 'brand',
+    type: String,
+    required: false,
+    isArray: true,
+    description:
+      'One or more brands. Repeat param or comma-separate. Matches ANY selected value.',
   })
   @ApiQuery({
     name: 'status',
@@ -94,24 +118,62 @@ export class BenefitsController {
 
   @Get('categories')
   @ApiOperation({
-    summary: 'List canonical benefit categories',
+    summary: 'List distinct categories for the current user',
     description:
-      'Closed category list for dashboard filters and Ask. Always prefer these exact values.',
+      'Used by the filter Category drill-down. Only categories that appear on this user’s coupons.',
   })
-  @ApiOkResponse({
-    schema: {
-      type: 'object',
-      properties: {
-        categories: {
-          type: 'array',
-          items: { type: 'string' },
-          example: [...CANONICAL_CATEGORIES],
-        },
-      },
-    },
+  @ApiQuery({
+    name: 'q',
+    type: String,
+    required: false,
+    description: 'Optional case-insensitive substring search.',
   })
-  listCategories(): { categories: readonly string[] } {
-    return { categories: CANONICAL_CATEGORIES };
+  @ApiOkResponse({ type: CategoriesResponseDto })
+  listCategories(
+    @Query() query: FilterOptionsQueryDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<CategoriesResponseDto> {
+    return this.benefitsService.listCategories(user.id, query.q);
+  }
+
+  @Get('merchants')
+  @ApiOperation({
+    summary: 'List distinct merchants for the current user',
+    description:
+      'Used by the filter Merchant drill-down. Only merchants that appear on this user’s coupons.',
+  })
+  @ApiQuery({
+    name: 'q',
+    type: String,
+    required: false,
+    description: 'Optional case-insensitive substring search.',
+  })
+  @ApiOkResponse({ type: MerchantsResponseDto })
+  listMerchants(
+    @Query() query: FilterOptionsQueryDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<MerchantsResponseDto> {
+    return this.benefitsService.listMerchants(user.id, query.q);
+  }
+
+  @Get('brands')
+  @ApiOperation({
+    summary: 'List distinct brands for the current user',
+    description:
+      'Used by the filter Brand drill-down. Only brands that appear on this user’s coupons.',
+  })
+  @ApiQuery({
+    name: 'q',
+    type: String,
+    required: false,
+    description: 'Optional case-insensitive substring search.',
+  })
+  @ApiOkResponse({ type: BrandsResponseDto })
+  listBrands(
+    @Query() query: FilterOptionsQueryDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<BrandsResponseDto> {
+    return this.benefitsService.listBrands(user.id, query.q);
   }
 
   @Get(':id')

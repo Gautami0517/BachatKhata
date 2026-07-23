@@ -41,23 +41,25 @@ export class BenefitsRepository {
 
   async findAll(
     sort: SortOption = SortOption.EXPIRING_SOON,
-    category: string | undefined,
+    categories: string[] | undefined,
     userId: string,
     status: StatusFilter = StatusFilter.UNUSED,
+    merchants?: string[],
+    brands?: string[],
   ): Promise<Coupon[]> {
-    const categoryFilter: Prisma.CouponWhereInput = category
-      ? { category: { equals: category, mode: 'insensitive' } }
-      : {};
-
     const statusFilter: Prisma.CouponWhereInput =
       status === StatusFilter.ALL
         ? {}
         : { isUsed: status === StatusFilter.USED };
 
     const baseWhere: Prisma.CouponWhereInput = {
-      ...categoryFilter,
-      ...statusFilter,
-      userId,
+      AND: [
+        { userId },
+        statusFilter,
+        this.buildMultiValueFilter('category', categories),
+        this.buildMultiValueFilter('merchant', merchants),
+        this.buildMultiValueFilter('brand', brands),
+      ].filter((clause) => Object.keys(clause).length > 0),
     };
 
     switch (sort) {
@@ -135,5 +137,101 @@ export class BenefitsRepository {
           ],
         });
     }
+  }
+
+  /**
+   * Match any of the provided values (OR). Empty / omitted → no filter.
+   */
+  private buildMultiValueFilter(
+    field: 'category' | 'merchant' | 'brand',
+    values?: string[],
+  ): Prisma.CouponWhereInput {
+    if (!values?.length) {
+      return {};
+    }
+
+    if (values.length === 1) {
+      return {
+        [field]: { equals: values[0], mode: 'insensitive' },
+      };
+    }
+
+    return {
+      OR: values.map((value) => ({
+        [field]: { equals: value, mode: 'insensitive' as const },
+      })),
+    };
+  }
+
+  /**
+   * Distinct non-null categories for this user (A→Z), optional substring search.
+   */
+  async findDistinctCategories(userId: string, q?: string): Promise<string[]> {
+    const rows = await this.prisma.coupon.findMany({
+      where: {
+        userId,
+        category: {
+          not: null,
+          ...(q?.trim()
+            ? { contains: q.trim(), mode: 'insensitive' as const }
+            : {}),
+        },
+      },
+      select: { category: true },
+      distinct: ['category'],
+      orderBy: { category: 'asc' },
+    });
+
+    return rows
+      .map((row) => row.category)
+      .filter((name): name is string => Boolean(name?.trim()));
+  }
+
+  /**
+   * Distinct non-null merchants for this user (A→Z), optional substring search.
+   */
+  async findDistinctMerchants(userId: string, q?: string): Promise<string[]> {
+    const rows = await this.prisma.coupon.findMany({
+      where: {
+        userId,
+        merchant: {
+          not: null,
+          ...(q?.trim()
+            ? { contains: q.trim(), mode: 'insensitive' as const }
+            : {}),
+        },
+      },
+      select: { merchant: true },
+      distinct: ['merchant'],
+      orderBy: { merchant: 'asc' },
+    });
+
+    return rows
+      .map((row) => row.merchant)
+      .filter((name): name is string => Boolean(name?.trim()));
+  }
+
+  /**
+   * Distinct non-null brands for this user (A→Z), optional substring search.
+   */
+  async findDistinctBrands(userId: string, q?: string): Promise<string[]> {
+    const rows = await this.prisma.coupon.findMany({
+      where: {
+        userId,
+        brand: {
+          not: null,
+          ...(q?.trim()
+            ? { contains: q.trim(), mode: 'insensitive' as const }
+            : {}),
+        },
+      },
+      select: { brand: true },
+      distinct: ['brand'],
+      orderBy: { brand: 'asc' },
+    });
+
+    return rows
+      .map((row) => row.brand)
+      .filter((name): name is string => Boolean(name?.trim()));
   }
 }

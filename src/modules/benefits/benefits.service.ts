@@ -72,8 +72,37 @@ export class BenefitsService {
       dto.category,
       userId,
       dto.status ?? StatusFilter.UNUSED,
+      dto.merchant,
+      dto.brand,
     );
     return toCouponResponseDtoList(coupons);
+  }
+
+  async listCategories(
+    userId: string,
+    q?: string,
+  ): Promise<{ categories: string[] }> {
+    const categories = await this.benefitsRepository.findDistinctCategories(
+      userId,
+      q,
+    );
+    return { categories };
+  }
+
+  async listMerchants(
+    userId: string,
+    q?: string,
+  ): Promise<{ merchants: string[] }> {
+    const merchants = await this.benefitsRepository.findDistinctMerchants(
+      userId,
+      q,
+    );
+    return { merchants };
+  }
+
+  async listBrands(userId: string, q?: string): Promise<{ brands: string[] }> {
+    const brands = await this.benefitsRepository.findDistinctBrands(userId, q);
+    return { brands };
   }
 
   async markUsed(id: string, userId: string): Promise<CouponResponseDto> {
