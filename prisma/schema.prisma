@@ -56,6 +56,9 @@ model Coupon {
   @@index([isUsed])
   @@index([benefitScore])
   @@index([expiryNotificationSentAt])
+  // Enforced via a partial unique index in migration 20260724080000
+  // (only applies when couponCode IS NOT NULL — Prisma @@unique can't express WHERE).
+  @@unique([userId, couponCode, expiryDate])
   @@map("coupons")
 }
 
