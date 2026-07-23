@@ -18,4 +18,9 @@ export default () => ({
     refreshExpires: process.env.JWT_REFRESH_EXPIRES ?? '30d',
     issuer: process.env.JWT_ISSUER ?? 'cvault',
   },
+  vapid: {
+    publicKey: process.env.VAPID_PUBLIC_KEY,
+    privateKey: process.env.VAPID_PRIVATE_KEY,
+    email: process.env.VAPID_EMAIL ?? 'mailto:benefitai@example.com',
+  },
 });

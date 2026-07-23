@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { LoggerModule } from './common/logger/logger.module';
 import { configuration, validate } from './config';
 import { AiModule } from './modules/ai/ai.module';
 import { AskModule } from './modules/ask/ask.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BenefitsModule } from './modules/benefits/benefits.module';
+import { NotificationModule } from './modules/notification/notification.module';
 import { RecommendationModule } from './modules/recommendation/recommendation.module';
 import { SearchModule } from './modules/search/search.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -17,6 +19,7 @@ import { PrismaModule } from './prisma/prisma.module';
       load: [configuration],
       validate,
     }),
+    ScheduleModule.forRoot(),
     LoggerModule,
     PrismaModule,
     AuthModule,
@@ -25,6 +28,7 @@ import { PrismaModule } from './prisma/prisma.module';
     AiModule,
     SearchModule,
     RecommendationModule,
+    NotificationModule,
   ],
 })
 export class AppModule {}
