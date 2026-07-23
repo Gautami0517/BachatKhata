@@ -39,6 +39,8 @@ model Coupon {
   couponCode      String?
   expiryDate      DateTime?    @db.Timestamptz(3)
   expiryNotificationSentAt  DateTime?    @db.Timestamptz(3)
+  isUsed          Boolean      @default(false)
+  usedAt          DateTime?    @db.Timestamptz(3)
   source          String?
   rawText         String
   createdAt       DateTime     @default(now()) @db.Timestamptz(3)
@@ -50,6 +52,7 @@ model Coupon {
   @@index([merchant])
   @@index([brand])
   @@index([userId])
+  @@index([isUsed])
   @@index([expiryNotificationSentAt])
   @@map("coupons")
 }

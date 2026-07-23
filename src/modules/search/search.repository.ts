@@ -13,6 +13,7 @@ export class SearchRepository {
       SELECT *
       FROM "coupons"
       WHERE "userId" = ${userId}
+      AND "isUsed" = false
       AND (
         "merchant" ILIKE ${term}
         OR "brand"    ILIKE ${term}

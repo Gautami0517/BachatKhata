@@ -55,6 +55,20 @@ export class CouponResponseDto {
   @ApiPropertyOptional({ nullable: true, type: String })
   source!: string | null;
 
+  @ApiProperty({
+    default: false,
+    description: 'Whether the coupon has been marked as used.',
+  })
+  isUsed!: boolean;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    type: String,
+    format: 'date-time',
+    description: 'When the user marked the coupon as used.',
+  })
+  usedAt!: Date | null;
+
   @ApiProperty()
   rawText!: string;
 

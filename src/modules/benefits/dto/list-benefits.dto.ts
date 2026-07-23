@@ -11,6 +11,12 @@ export enum SortOption {
   CATEGORY = 'category',
 }
 
+export enum StatusFilter {
+  UNUSED = 'unused',
+  USED = 'used',
+  ALL = 'all',
+}
+
 export class ListBenefitsDto {
   @ApiPropertyOptional({
     enum: SortOption,
@@ -32,4 +38,16 @@ export class ListBenefitsDto {
   @IsString()
   @MaxLength(120)
   category?: string;
+
+  @ApiPropertyOptional({
+    enum: StatusFilter,
+    enumName: 'StatusFilter',
+    default: StatusFilter.UNUSED,
+    description:
+      'Filter by used status. Defaults to "unused" (excludes used coupons). ' +
+      'Use "used" to see used history, or "all" for everything.',
+  })
+  @IsOptional()
+  @IsEnum(StatusFilter)
+  status: StatusFilter = StatusFilter.UNUSED;
 }

@@ -15,10 +15,7 @@ export class SearchRepository {
    * Product-first candidates: must match product on title/rawText.
    * Brand/merchant are AND constraints when present.
    */
-  findProductCandidates(
-    intent: AskIntent,
-    userId: string,
-  ): Promise<Coupon[]> {
+  findProductCandidates(intent: AskIntent, userId: string): Promise<Coupon[]> {
     if (!intent.product) {
       return Promise.resolve([]);
     }
@@ -58,10 +55,7 @@ export class SearchRepository {
   /**
    * Category-only candidates (used as fallback when product has no hits).
    */
-  findCategoryCandidates(
-    intent: AskIntent,
-    userId: string,
-  ): Promise<Coupon[]> {
+  findCategoryCandidates(intent: AskIntent, userId: string): Promise<Coupon[]> {
     if (!intent.category) {
       return Promise.resolve([]);
     }
@@ -91,10 +85,7 @@ export class SearchRepository {
   /**
    * General candidates when intent has no product (merchant / brand / category OR).
    */
-  findGeneralCandidates(
-    intent: AskIntent,
-    userId: string,
-  ): Promise<Coupon[]> {
+  findGeneralCandidates(intent: AskIntent, userId: string): Promise<Coupon[]> {
     const filters = this.buildGeneralMatchFilters(intent);
 
     if (filters.length === 0) {
@@ -177,7 +168,12 @@ export class SearchRepository {
 
   private unexpiredFilter(): Prisma.CouponWhereInput {
     return {
-      OR: [{ expiryDate: null }, { expiryDate: { gte: new Date() } }],
+      AND: [
+        { isUsed: false },
+        {
+          OR: [{ expiryDate: null }, { expiryDate: { gte: new Date() } }],
+        },
+      ],
     };
   }
 

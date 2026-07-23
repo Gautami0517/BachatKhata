@@ -4,7 +4,11 @@ import { BenefitsRepository } from './benefits.repository';
 import { CouponPreviewDto } from './dto/coupon-preview.dto';
 import { CouponResponseDto } from './dto/coupon-response.dto';
 import { ImportBenefitDto } from './dto/import-benefit.dto';
-import { ListBenefitsDto, SortOption } from './dto/list-benefits.dto';
+import {
+  ListBenefitsDto,
+  SortOption,
+  StatusFilter,
+} from './dto/list-benefits.dto';
 import { SaveExtractedDto } from './dto/save-extracted.dto';
 import {
   toCouponResponseDto,
@@ -62,8 +66,27 @@ export class BenefitsService {
       dto.sort ?? SortOption.EXPIRING_SOON,
       dto.category,
       userId,
+      dto.status ?? StatusFilter.UNUSED,
     );
     return toCouponResponseDtoList(coupons);
+  }
+
+  async markUsed(id: string, userId: string): Promise<CouponResponseDto> {
+    const existing = await this.benefitsRepository.findById(id, userId);
+    if (!existing) {
+      throw new NotFoundException(`Coupon "${id}" was not found`);
+    }
+    const updated = await this.benefitsRepository.markUsed(id, userId);
+    return toCouponResponseDto(updated!);
+  }
+
+  async markUnused(id: string, userId: string): Promise<CouponResponseDto> {
+    const existing = await this.benefitsRepository.findById(id, userId);
+    if (!existing) {
+      throw new NotFoundException(`Coupon "${id}" was not found`);
+    }
+    const updated = await this.benefitsRepository.markUnused(id, userId);
+    return toCouponResponseDto(updated!);
   }
 
   /**

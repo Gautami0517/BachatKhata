@@ -20,6 +20,8 @@ export function toCouponResponseDto(coupon: Coupon): CouponResponseDto {
     couponCode: coupon.couponCode,
     expiryDate: coupon.expiryDate,
     source: coupon.source,
+    isUsed: coupon.isUsed,
+    usedAt: coupon.usedAt,
     rawText: coupon.rawText,
     createdAt: coupon.createdAt,
     updatedAt: coupon.updatedAt,
