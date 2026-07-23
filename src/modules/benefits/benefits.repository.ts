@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Coupon, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { SortOption } from './dto/list-benefits.dto';
+import { SortOption, StatusFilter } from './dto/list-benefits.dto';
 
 @Injectable()
 export class BenefitsRepository {
@@ -21,17 +21,42 @@ export class BenefitsRepository {
     return this.prisma.coupon.delete({ where: { id } });
   }
 
+  markUsed(id: string, userId: string): Promise<Coupon | null> {
+    return this.prisma.coupon
+      .updateMany({
+        where: { id, userId },
+        data: { isUsed: true, usedAt: new Date() },
+      })
+      .then(() => this.findById(id, userId));
+  }
+
+  markUnused(id: string, userId: string): Promise<Coupon | null> {
+    return this.prisma.coupon
+      .updateMany({
+        where: { id, userId },
+        data: { isUsed: false, usedAt: null },
+      })
+      .then(() => this.findById(id, userId));
+  }
+
   async findAll(
     sort: SortOption = SortOption.EXPIRING_SOON,
     category: string | undefined,
     userId: string,
+    status: StatusFilter = StatusFilter.UNUSED,
   ): Promise<Coupon[]> {
     const categoryFilter: Prisma.CouponWhereInput = category
       ? { category: { equals: category, mode: 'insensitive' } }
       : {};
 
+    const statusFilter: Prisma.CouponWhereInput =
+      status === StatusFilter.ALL
+        ? {}
+        : { isUsed: status === StatusFilter.USED };
+
     const baseWhere: Prisma.CouponWhereInput = {
       ...categoryFilter,
+      ...statusFilter,
       userId,
     };
 

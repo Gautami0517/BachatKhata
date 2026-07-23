@@ -33,7 +33,11 @@ import { BenefitsService } from './benefits.service';
 import { CouponPreviewDto } from './dto/coupon-preview.dto';
 import { CouponResponseDto } from './dto/coupon-response.dto';
 import { ImportBenefitDto } from './dto/import-benefit.dto';
-import { ListBenefitsDto, SortOption } from './dto/list-benefits.dto';
+import {
+  ListBenefitsDto,
+  SortOption,
+  StatusFilter,
+} from './dto/list-benefits.dto';
 import { SaveExtractedDto } from './dto/save-extracted.dto';
 import { CurrentUser } from '../auth/auth.service';
 import type { AuthenticatedUser } from '../auth/auth.service';
@@ -70,6 +74,14 @@ export class BenefitsController {
     type: String,
     required: false,
     description: 'Case-insensitive category filter.',
+  })
+  @ApiQuery({
+    name: 'status',
+    enum: StatusFilter,
+    enumName: 'StatusFilter',
+    required: false,
+    description:
+      'Filter by used status. Defaults to "unused". Use "used" for used history, "all" for everything.',
   })
   @ApiOkResponse({ type: [CouponResponseDto] })
   listBenefits(
@@ -109,6 +121,43 @@ export class BenefitsController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<void> {
     return this.benefitsService.remove(id, user.id);
+  }
+
+  @Post(':id/mark-used')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Mark a coupon as used',
+    description:
+      'Records that the user has redeemed this coupon at checkout. ' +
+      'Idempotent — marking an already-used coupon returns its current state. ' +
+      'Sets isUsed=true and usedAt=now.',
+  })
+  @ApiOkResponse({ type: CouponResponseDto })
+  @ApiBadRequestResponse({ description: 'id is not a valid UUID' })
+  @ApiNotFoundResponse({ description: 'No coupon exists for the given id' })
+  markUsed(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<CouponResponseDto> {
+    return this.benefitsService.markUsed(id, user.id);
+  }
+
+  @Post(':id/mark-unused')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Unmark a coupon (set back to unused)',
+    description:
+      'Reverses an accidental "mark used" tap. Sets isUsed=false and usedAt=null. ' +
+      'Idempotent.',
+  })
+  @ApiOkResponse({ type: CouponResponseDto })
+  @ApiBadRequestResponse({ description: 'id is not a valid UUID' })
+  @ApiNotFoundResponse({ description: 'No coupon exists for the given id' })
+  markUnused(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<CouponResponseDto> {
+    return this.benefitsService.markUnused(id, user.id);
   }
 
   @Post('extract-image')
