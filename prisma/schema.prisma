@@ -18,26 +18,47 @@ enum DiscountType {
   OTHER
 }
 
+enum NotificationType {
+  EXPIRY
+  RECOMMENDATION
+  SYSTEM
+}
+
 model Coupon {
-  id              String       @id @default(uuid()) @db.Uuid
-  merchant        String?
-  brand           String?
-  title           String
-  category        String?
-  discountType    DiscountType
-  discountValue   Float?
-  minimumSpend    Float?
-  maximumDiscount Float?
-  couponCode      String?
-  expiryDate      DateTime?    @db.Timestamptz(3)
-  source          String?
-  rawText         String
-  createdAt       DateTime     @default(now()) @db.Timestamptz(3)
-  updatedAt       DateTime     @updatedAt @db.Timestamptz(3)
+  id                        String       @id @default(uuid()) @db.Uuid
+  merchant                  String?
+  brand                     String?
+  title                     String
+  category                  String?
+  discountType              DiscountType
+  discountValue             Float?
+  minimumSpend              Float?
+  maximumDiscount           Float?
+  couponCode                String?
+  expiryDate                DateTime?    @db.Timestamptz(3)
+  expiryNotificationSentAt  DateTime?    @db.Timestamptz(3)
+  source                    String?
+  rawText                   String
+  createdAt                 DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt                 DateTime     @updatedAt @db.Timestamptz(3)
 
   @@index([couponCode])
   @@index([expiryDate])
   @@index([merchant])
   @@index([brand])
+  @@index([expiryNotificationSentAt])
   @@map("coupons")
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @default("default")
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }

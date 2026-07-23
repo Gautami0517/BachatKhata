@@ -14,6 +14,7 @@ export type CouponEntity = {
   maximumDiscount: number | null;
   couponCode: string | null;
   expiryDate: Date | null;
+  expiryNotificationSentAt: Date | null;
   source: string | null;
   rawText: string;
   createdAt: Date;

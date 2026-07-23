@@ -12,4 +12,9 @@ export default () => ({
   swagger: {
     path: process.env.SWAGGER_PATH ?? 'api/docs',
   },
+  vapid: {
+    publicKey: process.env.VAPID_PUBLIC_KEY,
+    privateKey: process.env.VAPID_PRIVATE_KEY,
+    email: process.env.VAPID_EMAIL ?? 'mailto:benefitai@example.com',
+  },
 });

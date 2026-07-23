@@ -42,6 +42,18 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   SWAGGER_PATH?: string;
+
+  @IsString()
+  @IsOptional()
+  VAPID_PUBLIC_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  VAPID_PRIVATE_KEY?: string;
+
+  @IsString()
+  @IsOptional()
+  VAPID_EMAIL?: string;
 }
 
 export function validate(config: Record<string, unknown>) {
