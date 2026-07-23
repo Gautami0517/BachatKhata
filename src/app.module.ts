@@ -4,6 +4,7 @@ import { LoggerModule } from './common/logger/logger.module';
 import { configuration, validate } from './config';
 import { AiModule } from './modules/ai/ai.module';
 import { AskModule } from './modules/ask/ask.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { BenefitsModule } from './modules/benefits/benefits.module';
 import { RecommendationModule } from './modules/recommendation/recommendation.module';
 import { SearchModule } from './modules/search/search.module';
@@ -18,6 +19,7 @@ import { PrismaModule } from './prisma/prisma.module';
     }),
     LoggerModule,
     PrismaModule,
+    AuthModule,
     BenefitsModule,
     AskModule,
     AiModule,

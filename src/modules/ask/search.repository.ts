@@ -14,7 +14,7 @@ export class SearchRepository {
   /**
    * Fetch unexpired coupons that match any extracted intent signal.
    */
-  async findCandidates(intent: AskIntent): Promise<Coupon[]> {
+  async findCandidates(intent: AskIntent, userId: string): Promise<Coupon[]> {
     const filters = this.buildMatchFilters(intent);
 
     if (filters.length === 0) {
@@ -26,6 +26,7 @@ export class SearchRepository {
     return this.prisma.coupon.findMany({
       where: {
         AND: [
+          { userId },
           {
             OR: [{ expiryDate: null }, { expiryDate: { gte: new Date() } }],
           },
@@ -41,8 +42,12 @@ export class SearchRepository {
     const filters: Prisma.CouponWhereInput[] = [];
 
     if (intent.merchant) {
-      filters.push({ merchant: { equals: intent.merchant, mode: 'insensitive' } });
-      filters.push({ merchant: { contains: intent.merchant, mode: 'insensitive' } });
+      filters.push({
+        merchant: { equals: intent.merchant, mode: 'insensitive' },
+      });
+      filters.push({
+        merchant: { contains: intent.merchant, mode: 'insensitive' },
+      });
     }
 
     if (intent.brand) {
@@ -60,7 +65,9 @@ export class SearchRepository {
     }
 
     if (intent.product) {
-      filters.push({ title: { contains: intent.product, mode: 'insensitive' } });
+      filters.push({
+        title: { contains: intent.product, mode: 'insensitive' },
+      });
       // rawText stands in for description when no dedicated description field exists
       filters.push({
         rawText: { contains: intent.product, mode: 'insensitive' },
@@ -81,10 +88,7 @@ export class SearchRepository {
     }
 
     return {
-      OR: [
-        { minimumSpend: null },
-        { minimumSpend: { lte: expectedSpend } },
-      ],
+      OR: [{ minimumSpend: null }, { minimumSpend: { lte: expectedSpend } }],
     };
   }
 }

@@ -15,8 +15,14 @@ export class SearchService {
     private readonly searchRanker: SearchRanker,
   ) {}
 
-  async searchByIntent(intent: AskIntent): Promise<RankedCoupon[]> {
-    const candidates = await this.searchRepository.findCandidates(intent);
+  async searchByIntent(
+    intent: AskIntent,
+    userId: string,
+  ): Promise<RankedCoupon[]> {
+    const candidates = await this.searchRepository.findCandidates(
+      intent,
+      userId,
+    );
     return this.searchRanker.rank(candidates, intent);
   }
 }

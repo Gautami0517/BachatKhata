@@ -7,6 +7,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CouponResponseDto } from '../benefits/dto/coupon-response.dto';
+import { CurrentUser } from '../auth/auth.service';
+import type { AuthenticatedUser } from '../auth/auth.service';
 import { SearchService } from './search.service';
 import { SearchQueryDto } from './dto/search-query.dto';
 
@@ -33,7 +35,10 @@ export class SearchController {
   @ApiBadRequestResponse({
     description: 'Missing or empty `q` query parameter',
   })
-  search(@Query() dto: SearchQueryDto): Promise<CouponResponseDto[]> {
-    return this.searchService.search(dto);
+  search(
+    @Query() dto: SearchQueryDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<CouponResponseDto[]> {
+    return this.searchService.search(dto, user.id);
   }
 }

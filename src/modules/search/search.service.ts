@@ -8,8 +8,11 @@ import { SearchQueryDto } from './dto/search-query.dto';
 export class SearchService {
   constructor(private readonly searchRepository: SearchRepository) {}
 
-  async search(dto: SearchQueryDto): Promise<CouponResponseDto[]> {
-    const coupons = await this.searchRepository.search(dto.q.trim());
+  async search(
+    dto: SearchQueryDto,
+    userId: string,
+  ): Promise<CouponResponseDto[]> {
+    const coupons = await this.searchRepository.search(dto.q.trim(), userId);
     return toCouponResponseDtoList(coupons);
   }
 }
