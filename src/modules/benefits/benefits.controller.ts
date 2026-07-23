@@ -35,6 +35,8 @@ import { CouponResponseDto } from './dto/coupon-response.dto';
 import { ImportBenefitDto } from './dto/import-benefit.dto';
 import { ListBenefitsDto, SortOption } from './dto/list-benefits.dto';
 import { SaveExtractedDto } from './dto/save-extracted.dto';
+import { CurrentUser } from '../auth/auth.service';
+import type { AuthenticatedUser } from '../auth/auth.service';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_MIME = new Set([
@@ -70,8 +72,11 @@ export class BenefitsController {
     description: 'Case-insensitive category filter.',
   })
   @ApiOkResponse({ type: [CouponResponseDto] })
-  listBenefits(@Query() dto: ListBenefitsDto): Promise<CouponResponseDto[]> {
-    return this.benefitsService.findAll(dto);
+  listBenefits(
+    @Query() dto: ListBenefitsDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<CouponResponseDto[]> {
+    return this.benefitsService.findAll(dto, user.id);
   }
 
   @Get(':id')
@@ -84,8 +89,9 @@ export class BenefitsController {
   @ApiNotFoundResponse({ description: 'No coupon exists for the given id' })
   getBenefit(
     @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<CouponResponseDto> {
-    return this.benefitsService.findOne(id);
+    return this.benefitsService.findOne(id, user.id);
   }
 
   @Delete(':id')
@@ -98,8 +104,11 @@ export class BenefitsController {
   @ApiNoContentResponse({ description: 'Coupon deleted successfully' })
   @ApiBadRequestResponse({ description: 'id is not a valid UUID' })
   @ApiNotFoundResponse({ description: 'No coupon exists for the given id' })
-  removeBenefit(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {
-    return this.benefitsService.remove(id);
+  removeBenefit(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<void> {
+    return this.benefitsService.remove(id, user.id);
   }
 
   @Post('extract-image')
@@ -184,8 +193,11 @@ export class BenefitsController {
   @ApiUnprocessableEntityResponse({
     description: 'Coupon failed normalization (e.g. missing title)',
   })
-  saveExtraction(@Body() dto: SaveExtractedDto): Promise<CouponResponseDto> {
-    return this.benefitsService.saveExtraction(dto);
+  saveExtraction(
+    @Body() dto: SaveExtractedDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<CouponResponseDto> {
+    return this.benefitsService.saveExtraction(dto, user.id);
   }
 
   @Post('import')
@@ -206,7 +218,10 @@ export class BenefitsController {
   @ApiServiceUnavailableResponse({
     description: 'GEMINI_API_KEY is not configured',
   })
-  importBenefit(@Body() dto: ImportBenefitDto): Promise<CouponResponseDto> {
-    return this.benefitsService.importBenefit(dto);
+  importBenefit(
+    @Body() dto: ImportBenefitDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<CouponResponseDto> {
+    return this.benefitsService.importBenefit(dto, user.id);
   }
 }

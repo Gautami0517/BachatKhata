@@ -44,6 +44,23 @@ class EnvironmentVariables {
   SWAGGER_PATH?: string;
 
   @IsString()
+    @IsString()
+  @MinLength(32)
+  JWT_SECRET!: string;
+
+  @IsString()
+  @IsOptional()
+  JWT_ACCESS_EXPIRES?: string;
+
+  @IsString()
+  @IsOptional()
+  JWT_REFRESH_EXPIRES?: string;
+
+  @IsString()
+  @IsOptional()
+  JWT_ISSUER?: string;
+
+  @IsString()
   @IsOptional()
   VAPID_PUBLIC_KEY?: string;
 

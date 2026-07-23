@@ -10,6 +10,8 @@ import {
 import { AskService } from './ask.service';
 import { AskBenefitDto } from './dto/ask-benefit.dto';
 import { AskResponseDto } from './dto/ask-response.dto';
+import { CurrentUser } from '../auth/auth.service';
+import type { AuthenticatedUser } from '../auth/auth.service';
 
 @ApiTags('benefits')
 @Controller('benefits')
@@ -32,7 +34,10 @@ export class AskController {
   @ApiServiceUnavailableResponse({
     description: 'GEMINI_API_KEY is not configured',
   })
-  ask(@Body() dto: AskBenefitDto): Promise<AskResponseDto> {
-    return this.askService.ask(dto);
+  ask(
+    @Body() dto: AskBenefitDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<AskResponseDto> {
+    return this.askService.ask(dto, user.id);
   }
 }

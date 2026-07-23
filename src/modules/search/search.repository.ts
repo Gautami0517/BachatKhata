@@ -6,13 +6,14 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class SearchRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async search(q: string): Promise<Coupon[]> {
+  async search(q: string, userId: string): Promise<Coupon[]> {
     const term = `%${q}%`;
 
     const rows = await this.prisma.$queryRaw<Coupon[]>(Prisma.sql`
       SELECT *
       FROM "coupons"
-      WHERE (
+      WHERE "userId" = ${userId}
+      AND (
         "merchant" ILIKE ${term}
         OR "brand"    ILIKE ${term}
         OR "title"    ILIKE ${term}

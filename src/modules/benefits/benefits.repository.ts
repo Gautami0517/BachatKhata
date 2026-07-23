@@ -11,8 +11,10 @@ export class BenefitsRepository {
     return this.prisma.coupon.create({ data });
   }
 
-  findById(id: string): Promise<Coupon | null> {
-    return this.prisma.coupon.findUnique({ where: { id } });
+  findById(id: string, userId: string): Promise<Coupon | null> {
+    return this.prisma.coupon.findFirst({
+      where: { id, userId },
+    });
   }
 
   delete(id: string): Promise<Coupon> {
@@ -21,13 +23,17 @@ export class BenefitsRepository {
 
   async findAll(
     sort: SortOption = SortOption.EXPIRING_SOON,
-    category?: string,
+    category: string | undefined,
+    userId: string,
   ): Promise<Coupon[]> {
     const categoryFilter: Prisma.CouponWhereInput = category
       ? { category: { equals: category, mode: 'insensitive' } }
       : {};
 
-    const baseWhere: Prisma.CouponWhereInput = { ...categoryFilter };
+    const baseWhere: Prisma.CouponWhereInput = {
+      ...categoryFilter,
+      userId,
+    };
 
     switch (sort) {
       case SortOption.EXPIRING_SOON:

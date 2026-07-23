@@ -7,6 +7,7 @@ const DISCOUNT_TYPE_VALUES = new Set<string>(Object.values(DiscountType));
 export type NormalizeCouponContext = {
   rawText: string;
   source?: string | null;
+  userId: string;
 };
 
 /**
@@ -30,6 +31,7 @@ export function normalizeCouponExtraction(
   );
 
   return {
+    user: { connect: { id: context.userId } },
     merchant: normalizeProperName(extraction.merchant),
     brand: normalizeProperName(extraction.brand),
     title: collapseWhitespace(title),

@@ -25,27 +25,61 @@ enum NotificationType {
 }
 
 model Coupon {
-  id                        String       @id @default(uuid()) @db.Uuid
-  merchant                  String?
-  brand                     String?
-  title                     String
-  category                  String?
-  discountType              DiscountType
-  discountValue             Float?
-  minimumSpend              Float?
-  maximumDiscount           Float?
-  couponCode                String?
-  expiryDate                DateTime?    @db.Timestamptz(3)
+  id              String       @id @default(uuid()) @db.Uuid
+  user            User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId          String?      @db.Uuid
+  merchant        String?
+  brand           String?
+  title           String
+  category        String?
+  discountType    DiscountType
+  discountValue   Float?
+  minimumSpend    Float?
+  maximumDiscount Float?
+  couponCode      String?
+  expiryDate      DateTime?    @db.Timestamptz(3)
   expiryNotificationSentAt  DateTime?    @db.Timestamptz(3)
-  source                    String?
-  rawText                   String
-  createdAt                 DateTime     @default(now()) @db.Timestamptz(3)
-  updatedAt                 DateTime     @updatedAt @db.Timestamptz(3)
+  source          String?
+  rawText         String
+  createdAt       DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime     @updatedAt @db.Timestamptz(3)
 
+  
   @@index([couponCode])
   @@index([expiryDate])
   @@index([merchant])
   @@index([brand])
+  @@index([userId])
+  @@index([expiryNotificationSentAt])
+  @@map("coupons")
+}
+
+model User {
+  id            String         @id @default(uuid()) @db.Uuid
+  email         String         @unique
+  name          String
+  passwordHash  String
+  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
+  coupons       Coupon[]
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id           String      @id @default(uuid()) @db.Uuid
+  userId       String      @db.Uuid
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash    String      @unique
+  familyId     String      @db.Uuid
+  replacedById String?     @db.Uuid
+  revokedAt    DateTime?   @db.Timestamptz(3)
+  expiresAt    DateTime    @db.Timestamptz(3)
+  createdAt    DateTime    @default(now()) @db.Timestamptz(3)
+
+  @@index([userId, familyId])
+  @@map("refresh_tokens")
   @@index([expiryNotificationSentAt])
   @@map("coupons")
 }

@@ -19,7 +19,10 @@ export class BenefitsService {
     private readonly benefitsRepository: BenefitsRepository,
   ) {}
 
-  async importBenefit(dto: ImportBenefitDto): Promise<CouponResponseDto> {
+  async importBenefit(
+    dto: ImportBenefitDto,
+    userId: string,
+  ): Promise<CouponResponseDto> {
     const rawText = dto.rawText.trim();
     const source = dto.source?.trim() || 'user_paste';
 
@@ -28,32 +31,37 @@ export class BenefitsService {
     const couponData = normalizeCouponExtraction(extraction, {
       rawText,
       source,
+      userId,
     });
 
     const coupon = await this.benefitsRepository.create(couponData);
     return toCouponResponseDto(coupon);
   }
 
-  async findOne(id: string): Promise<CouponResponseDto> {
-    const coupon = await this.benefitsRepository.findById(id);
+  async findOne(id: string, userId: string): Promise<CouponResponseDto> {
+    const coupon = await this.benefitsRepository.findById(id, userId);
     if (!coupon) {
       throw new NotFoundException(`Coupon "${id}" was not found`);
     }
     return toCouponResponseDto(coupon);
   }
 
-  async remove(id: string): Promise<void> {
-    const existing = await this.benefitsRepository.findById(id);
+  async remove(id: string, userId: string): Promise<void> {
+    const existing = await this.benefitsRepository.findById(id, userId);
     if (!existing) {
       throw new NotFoundException(`Coupon "${id}" was not found`);
     }
     await this.benefitsRepository.delete(id);
   }
 
-  async findAll(dto: ListBenefitsDto): Promise<CouponResponseDto[]> {
+  async findAll(
+    dto: ListBenefitsDto,
+    userId: string,
+  ): Promise<CouponResponseDto[]> {
     const coupons = await this.benefitsRepository.findAll(
       dto.sort ?? SortOption.EXPIRING_SOON,
       dto.category,
+      userId,
     );
     return toCouponResponseDtoList(coupons);
   }
@@ -95,7 +103,10 @@ export class BenefitsService {
    * Step 2 of the two-step image import flow.
    * Persists a (possibly edited) extraction. No AI call.
    */
-  async saveExtraction(dto: SaveExtractedDto): Promise<CouponResponseDto> {
+  async saveExtraction(
+    dto: SaveExtractedDto,
+    userId: string,
+  ): Promise<CouponResponseDto> {
     const extraction = {
       merchant: dto.merchant ?? null,
       brand: dto.brand ?? null,
@@ -113,6 +124,7 @@ export class BenefitsService {
     const couponData = normalizeCouponExtraction(extraction, {
       rawText: dto.rawText,
       source: dto.source ?? null,
+      userId,
     });
 
     const coupon = await this.benefitsRepository.create(couponData);

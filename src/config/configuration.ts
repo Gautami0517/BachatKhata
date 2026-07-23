@@ -12,6 +12,12 @@ export default () => ({
   swagger: {
     path: process.env.SWAGGER_PATH ?? 'api/docs',
   },
+  jwt: {
+    secret: process.env.JWT_SECRET ?? '',
+    accessExpires: process.env.JWT_ACCESS_EXPIRES ?? '15m',
+    refreshExpires: process.env.JWT_REFRESH_EXPIRES ?? '30d',
+    issuer: process.env.JWT_ISSUER ?? 'cvault',
+  },
   vapid: {
     publicKey: process.env.VAPID_PUBLIC_KEY,
     privateKey: process.env.VAPID_PRIVATE_KEY,
