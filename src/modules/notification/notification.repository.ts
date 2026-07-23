@@ -14,6 +14,7 @@ export class NotificationRepository {
 
     return this.prisma.coupon.findMany({
       where: {
+        userId: { not: null },
         expiryDate: {
           gt: now,
           lte: in24Hours,
@@ -26,6 +27,15 @@ export class NotificationRepository {
 
   findBenefitById(id: string): Promise<Coupon | null> {
     return this.prisma.coupon.findUnique({ where: { id } });
+  }
+
+  findBenefitByIdForUser(
+    id: string,
+    userId: string,
+  ): Promise<Coupon | null> {
+    return this.prisma.coupon.findFirst({
+      where: { id, userId },
+    });
   }
 
   markExpiryNotificationSent(

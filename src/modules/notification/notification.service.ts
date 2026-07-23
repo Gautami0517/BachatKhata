@@ -2,6 +2,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { Coupon } from '@prisma/client';
 import { NotificationMessageBuilder } from './notification-message.builder';
@@ -10,9 +11,6 @@ import { SubscribePushDto } from './dto/subscribe-push.dto';
 import { NotificationType } from './dto/notification-type.enum';
 import { SubscriptionRepository } from './subscription.repository';
 import { WebPushService } from './web-push.service';
-
-/** Default vault owner until auth lands — all demo devices share this id. */
-export const DEFAULT_NOTIFICATION_USER_ID = 'default';
 
 export type ExpiryDispatchResult = {
   benefitId: string;
@@ -25,7 +23,7 @@ export type ExpiryDispatchResult = {
 
 /**
  * Orchestrates subscription storage and expiry notification delivery.
- * Supports NotificationType for future RECOMMENDATION / SYSTEM reuse.
+ * Subscriptions and sends are scoped to the authenticated user id.
  */
 @Injectable()
 export class NotificationService {
@@ -38,10 +36,18 @@ export class NotificationService {
     private readonly webPushService: WebPushService,
   ) {}
 
-  async subscribe(
-    dto: SubscribePushDto,
-    userId: string = DEFAULT_NOTIFICATION_USER_ID,
-  ) {
+  getVapidPublicKey(): { publicKey: string } {
+    const publicKey = this.webPushService.getPublicKey();
+    if (!publicKey || !this.webPushService.isConfigured()) {
+      throw new ServiceUnavailableException(
+        'VAPID keys are not configured (VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY)',
+      );
+    }
+
+    return { publicKey };
+  }
+
+  async subscribe(dto: SubscribePushDto, userId: string) {
     const subscription = await this.subscriptionRepository.upsertByEndpoint({
       userId,
       endpoint: dto.endpoint.trim(),
@@ -57,9 +63,10 @@ export class NotificationService {
     };
   }
 
-  async unsubscribe(endpoint: string) {
-    const result = await this.subscriptionRepository.deleteByEndpoint(
+  async unsubscribe(endpoint: string, userId: string) {
+    const result = await this.subscriptionRepository.deleteByEndpointForUser(
       endpoint.trim(),
+      userId,
     );
 
     return {
@@ -98,13 +105,16 @@ export class NotificationService {
   }
 
   /**
-   * Demo / hackathon: send expiry reminder for a specific benefit immediately.
+   * Demo / hackathon: send expiry reminder for a benefit owned by this user.
    */
   async sendTestExpiryNotification(
     benefitId: string,
+    userId: string,
   ): Promise<ExpiryDispatchResult> {
-    const benefit =
-      await this.notificationRepository.findBenefitById(benefitId);
+    const benefit = await this.notificationRepository.findBenefitByIdForUser(
+      benefitId,
+      userId,
+    );
 
     if (!benefit) {
       throw new NotFoundException(`Benefit ${benefitId} not found`);
@@ -115,7 +125,7 @@ export class NotificationService {
 
   /**
    * Send an EXPIRY notification for a benefit and mark it as reminded.
-   * Future: add sendRecommendation / sendSystem using the same push path.
+   * Pushes only to subscriptions belonging to benefit.userId.
    */
   async sendExpiryNotification(
     benefit: Coupon,
@@ -132,16 +142,27 @@ export class NotificationService {
       };
     }
 
+    if (!benefit.userId) {
+      this.logger.warn(
+        `Skipping expiry push for benefit ${benefit.id}: no owning userId`,
+      );
+      return {
+        benefitId: benefit.id,
+        type: NotificationType.EXPIRY,
+        sent: 0,
+        failed: 0,
+        removed: 0,
+        markedSent: false,
+      };
+    }
+
     const payload = this.messageBuilder.buildExpiryReminder(benefit);
 
-    // Single-user vault today — all devices under DEFAULT_NOTIFICATION_USER_ID
     const pushResult = await this.webPushService.sendToUser(
-      DEFAULT_NOTIFICATION_USER_ID,
+      benefit.userId,
       payload,
     );
 
-    // Mark sent even if zero subscriptions (avoids hammering empty vaults hourly).
-    // force/test still marks so demos don't spam the same benefit repeatedly unless reset.
     await this.notificationRepository.markExpiryNotificationSent(benefit.id);
 
     return {

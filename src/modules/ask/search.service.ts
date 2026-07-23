@@ -81,6 +81,14 @@ export class SearchService {
     );
 
     if (candidates.length === 0) {
+      if (intent.category) {
+        return {
+          results: [],
+          matchType: null,
+          message: `No benefits found in ${intent.category}. Try another category or import a new offer.`,
+        };
+      }
+
       return { results: [], matchType: null };
     }
 

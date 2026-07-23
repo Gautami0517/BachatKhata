@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { GeminiService } from '../ai/gemini.service';
+import { BenefitScoringService } from './benefit-scoring.service';
 import { BenefitsRepository } from './benefits.repository';
 import { CouponPreviewDto } from './dto/coupon-preview.dto';
 import { CouponResponseDto } from './dto/coupon-response.dto';
@@ -21,6 +23,7 @@ export class BenefitsService {
   constructor(
     private readonly geminiService: GeminiService,
     private readonly benefitsRepository: BenefitsRepository,
+    private readonly benefitScoringService: BenefitScoringService,
   ) {}
 
   async importBenefit(
@@ -32,11 +35,13 @@ export class BenefitsService {
 
     const extraction = await this.geminiService.extractCoupon(rawText);
 
-    const couponData = normalizeCouponExtraction(extraction, {
-      rawText,
-      source,
-      userId,
-    });
+    const couponData = this.withBenefitScore(
+      normalizeCouponExtraction(extraction, {
+        rawText,
+        source,
+        userId,
+      }),
+    );
 
     const coupon = await this.benefitsRepository.create(couponData);
     return toCouponResponseDto(coupon);
@@ -106,6 +111,16 @@ export class BenefitsService {
       trimmedSource ?? 'user_share'
     } at ${new Date().toISOString()}]`;
 
+    const benefitScore = this.benefitScoringService.calculate({
+      merchant: extraction.merchant,
+      brand: extraction.brand,
+      discountType: extraction.discountType,
+      discountValue: extraction.discountValue,
+      minimumSpend: extraction.minimumSpend,
+      maximumDiscount: extraction.maximumDiscount,
+      expiryDate: extraction.expiryDate,
+    });
+
     return {
       merchant: extraction.merchant,
       brand: extraction.brand,
@@ -119,6 +134,7 @@ export class BenefitsService {
       expiryDate: extraction.expiryDate,
       source: extraction.source ?? trimmedSource,
       rawText,
+      benefitScore,
     };
   }
 
@@ -144,13 +160,32 @@ export class BenefitsService {
       source: dto.source ?? null,
     };
 
-    const couponData = normalizeCouponExtraction(extraction, {
-      rawText: dto.rawText,
-      source: dto.source ?? null,
-      userId,
-    });
+    const couponData = this.withBenefitScore(
+      normalizeCouponExtraction(extraction, {
+        rawText: dto.rawText,
+        source: dto.source ?? null,
+        userId,
+      }),
+    );
 
     const coupon = await this.benefitsRepository.create(couponData);
     return toCouponResponseDto(coupon);
+  }
+
+  /** Shared scoring step for text import and image save. */
+  private withBenefitScore(
+    couponData: Prisma.CouponCreateInput,
+  ): Prisma.CouponCreateInput {
+    const benefitScore = this.benefitScoringService.calculate({
+      merchant: couponData.merchant,
+      brand: couponData.brand,
+      discountType: couponData.discountType,
+      discountValue: couponData.discountValue,
+      minimumSpend: couponData.minimumSpend,
+      maximumDiscount: couponData.maximumDiscount,
+      expiryDate: couponData.expiryDate,
+    });
+
+    return { ...couponData, benefitScore };
   }
 }

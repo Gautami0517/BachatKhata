@@ -41,6 +41,7 @@ import {
 import { SaveExtractedDto } from './dto/save-extracted.dto';
 import { CurrentUser } from '../auth/auth.service';
 import type { AuthenticatedUser } from '../auth/auth.service';
+import { CANONICAL_CATEGORIES } from '../../common/categories/categories';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_MIME = new Set([
@@ -89,6 +90,28 @@ export class BenefitsController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<CouponResponseDto[]> {
     return this.benefitsService.findAll(dto, user.id);
+  }
+
+  @Get('categories')
+  @ApiOperation({
+    summary: 'List canonical benefit categories',
+    description:
+      'Closed category list for dashboard filters and Ask. Always prefer these exact values.',
+  })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: {
+        categories: {
+          type: 'array',
+          items: { type: 'string' },
+          example: [...CANONICAL_CATEGORIES],
+        },
+      },
+    },
+  })
+  listCategories(): { categories: readonly string[] } {
+    return { categories: CANONICAL_CATEGORIES };
   }
 
   @Get(':id')

@@ -97,6 +97,16 @@ export class BenefitsRepository {
           ],
         });
 
+      case SortOption.HIGHEST_SCORE:
+        return this.prisma.coupon.findMany({
+          where: baseWhere,
+          orderBy: [
+            { benefitScore: { sort: 'desc', nulls: 'last' } },
+            { expiryDate: { sort: 'asc', nulls: 'last' } },
+            { createdAt: 'desc' },
+          ],
+        });
+
       case SortOption.BRAND_AZ:
         return this.prisma.coupon.findMany({
           where: baseWhere,

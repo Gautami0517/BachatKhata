@@ -1,5 +1,6 @@
 import { UnprocessableEntityException } from '@nestjs/common';
 import { DiscountType, Prisma } from '@prisma/client';
+import { resolveCategory } from '../../../common/categories/categories';
 import { CouponExtraction } from '../../ai/dto/coupon-extraction.interface';
 
 const DISCOUNT_TYPE_VALUES = new Set<string>(Object.values(DiscountType));
@@ -30,12 +31,20 @@ export function normalizeCouponExtraction(
     extraction.maximumDiscount,
   );
 
+  const merchant = normalizeProperName(extraction.merchant);
+  const brand = normalizeProperName(extraction.brand);
+
   return {
     user: { connect: { id: context.userId } },
-    merchant: normalizeProperName(extraction.merchant),
-    brand: normalizeProperName(extraction.brand),
+    merchant,
+    brand,
     title: collapseWhitespace(title),
-    category: normalizeProperName(extraction.category),
+    category: resolveCategory({
+      category: extraction.category,
+      merchant,
+      brand,
+      title,
+    }),
     discountType: normalizeDiscountType(extraction.discountType),
     discountValue,
     minimumSpend,
@@ -118,14 +127,50 @@ function normalizeExpiry(value: string | null): Date | null {
     return null;
   }
 
-  const parsed = new Date(value.trim());
+  const trimmed = value.trim();
+  const parsed = new Date(trimmed);
   if (Number.isNaN(parsed.getTime())) {
     throw new UnprocessableEntityException(
       'Extracted expiry could not be normalized to a valid date',
     );
   }
 
+  // Date-only or midnight boundaries mean "valid through that calendar day"
+  // → store end of day IST (23:59:59.999+05:30), never start of day.
+  if (isDateOnlyExpiry(trimmed, parsed)) {
+    return endOfCalendarDayIst(parsed);
+  }
+
   return parsed;
+}
+
+/**
+ * True for YYYY-MM-DD strings or datetimes at 00:00:00.000Z
+ * (common Gemini output for "expires today" / date-only).
+ */
+function isDateOnlyExpiry(raw: string, parsed: Date): boolean {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return true;
+  }
+
+  return (
+    parsed.getUTCHours() === 0 &&
+    parsed.getUTCMinutes() === 0 &&
+    parsed.getUTCSeconds() === 0 &&
+    parsed.getUTCMilliseconds() === 0
+  );
+}
+
+/** End of the Asia/Kolkata calendar day for the given instant. */
+function endOfCalendarDayIst(date: Date): Date {
+  const day = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+
+  return new Date(`${day}T23:59:59.999+05:30`);
 }
 
 function normalizeNonNegativeNumber(value: number | null): number | null {

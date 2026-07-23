@@ -15,10 +15,16 @@ const SCORE = {
   HIGHER_DISCOUNT: 20,
   EARLIER_EXPIRY: 15,
   RECENTLY_ADDED: 10,
+  /** Spend-aware (only when intent.expectedSpend is set) */
+  SPEND_USABLE: 25,
+  SPEND_NO_MINIMUM: 15,
+  SPEND_MIN_FIT_MAX: 20,
+  SPEND_SAVINGS_MAX: 40,
 } as const;
 
 /**
  * Deterministic scoring / ranking for ask (and future recommendation) results.
+ * When expectedSpend is present, boosts offers that fit the budget and save more.
  */
 @Injectable()
 export class SearchRanker {
@@ -37,13 +43,26 @@ export class SearchRanker {
       ...coupons.map((c) => c.createdAt.getTime()),
     );
 
-    const ranked = coupons.map((coupon) => ({
+    const expectedSpend = intent.expectedSpend;
+    const estimatedSavings =
+      expectedSpend != null && expectedSpend > 0
+        ? coupons.map((c) => this.estimateSavings(c, expectedSpend))
+        : [];
+    const maxEstimatedSavings =
+      estimatedSavings.length > 0 ? Math.max(0, ...estimatedSavings) : 0;
+
+    const ranked = coupons.map((coupon, index) => ({
       ...coupon,
       score: this.scoreCoupon(coupon, intent, {
         now,
         maxDiscount,
         soonestExpiryMs,
         newestCreatedMs,
+        maxEstimatedSavings,
+        estimatedSavings:
+          expectedSpend != null && expectedSpend > 0
+            ? estimatedSavings[index]!
+            : 0,
       }),
     }));
 
@@ -66,6 +85,8 @@ export class SearchRanker {
       maxDiscount: number;
       soonestExpiryMs: number | null;
       newestCreatedMs: number;
+      maxEstimatedSavings: number;
+      estimatedSavings: number;
     },
   ): number {
     let score = 0;
@@ -121,7 +142,6 @@ export class SearchRanker {
       score += expiryBoost;
     }
 
-    // Recently added: created within last 3 days, or newest in the candidate set
     const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
     if (
       ctx.now - coupon.createdAt.getTime() <= threeDaysMs ||
@@ -130,7 +150,80 @@ export class SearchRanker {
       score += SCORE.RECENTLY_ADDED;
     }
 
+    if (intent.expectedSpend != null && intent.expectedSpend > 0) {
+      score += this.spendAwareBoost(
+        coupon,
+        intent.expectedSpend,
+        ctx.estimatedSavings,
+        ctx.maxEstimatedSavings,
+      );
+    }
+
     return Math.round(score);
+  }
+
+  /**
+   * Boost coupons that fit the typed spend and save more on that amount.
+   * Candidates are already filtered to minimumSpend <= expectedSpend (or null).
+   */
+  private spendAwareBoost(
+    coupon: Coupon,
+    expectedSpend: number,
+    estimatedSavings: number,
+    maxEstimatedSavings: number,
+  ): number {
+    let boost = 0;
+
+    if (coupon.minimumSpend == null) {
+      boost += SCORE.SPEND_NO_MINIMUM;
+    } else if (coupon.minimumSpend <= expectedSpend) {
+      boost += SCORE.SPEND_USABLE;
+
+      // Closer min-spend to the typed amount → better "fit" for that purchase
+      const ratio = coupon.minimumSpend / expectedSpend;
+      boost += SCORE.SPEND_MIN_FIT_MAX * Math.min(1, Math.max(0, ratio));
+    }
+
+    if (maxEstimatedSavings > 0 && estimatedSavings > 0) {
+      boost +=
+        SCORE.SPEND_SAVINGS_MAX * (estimatedSavings / maxEstimatedSavings);
+    }
+
+    return boost;
+  }
+
+  /**
+   * Rough savings if the user spends `expectedSpend` on this offer.
+   */
+  private estimateSavings(coupon: Coupon, expectedSpend: number): number {
+    const value = coupon.discountValue;
+    const maxCap = coupon.maximumDiscount;
+
+    switch (coupon.discountType) {
+      case DiscountType.PERCENTAGE: {
+        if (value == null || value <= 0) {
+          return 0;
+        }
+        const raw = (expectedSpend * value) / 100;
+        return maxCap != null ? Math.min(raw, maxCap) : raw;
+      }
+      case DiscountType.FLAT:
+      case DiscountType.CASHBACK: {
+        if (value == null || value <= 0) {
+          return maxCap ?? 0;
+        }
+        return maxCap != null ? Math.min(value, maxCap) : value;
+      }
+      case DiscountType.FREEBIE: {
+        return value ?? maxCap ?? 0;
+      }
+      default: {
+        if (value != null && value > 0) {
+          return maxCap != null ? Math.min(value, maxCap) : value;
+        }
+        return maxCap ?? 0;
+      }
+    }
   }
 
   private compareBySortPreference(
@@ -138,6 +231,15 @@ export class SearchRanker {
     b: RankedCoupon,
     intent: AskIntent,
   ): number {
+    if (intent.expectedSpend != null && intent.expectedSpend > 0) {
+      const spend = intent.expectedSpend;
+      const savingsDiff =
+        this.estimateSavings(b, spend) - this.estimateSavings(a, spend);
+      if (savingsDiff !== 0) {
+        return savingsDiff;
+      }
+    }
+
     switch (intent.sortPreference) {
       case 'HIGHEST_DISCOUNT':
         return this.discountMagnitude(b) - this.discountMagnitude(a);

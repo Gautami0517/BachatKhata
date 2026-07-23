@@ -26,16 +26,24 @@ MERCHANT
 - Otherwise null.
 
 BRAND
-- Product brand being sought (Nike, Samsung, Apple, etc.).
-- Set only when explicitly mentioned or high confidence.
-- Do not fabricate brands. Otherwise null.
+- Product brand being sought (Nike, Samsung, Apple, etc.). Free text — do not invent brands.
+- Set only when explicitly mentioned or high confidence. Otherwise null.
 
 CATEGORY
-- Infer a broad shopping category when possible.
-- Examples: Fashion, Electronics, Travel, Food, Groceries, Home, Health.
+- category MUST be exactly one of:
+  Fashion, Electronics, Food, Groceries, Travel, Home, Health, Beauty, Other
+- Never invent labels (no Eyewear, Dining, Restaurants as category values).
+- Synonym mapping examples:
+  - restaurants / dining / dinner / lunch / cafe → Food
+  - shoes / jewellery / eyewear / glasses → Fashion
+  - phone / laptop / gadgets → Electronics
+  - supermarket / kirana → Groceries
+  - flights / hotels → Travel
+  - If unclear → Other
 
 PRODUCT
-- Specific product type if mentioned (Shoes, Phone, Laptop, etc.).
+- Specific product type if mentioned (Shoes, Phone, Dinner, Laptop, etc.).
+- For broad category queries like "restaurants" or "groceries", set product=null and category only.
 - Otherwise null.
 
 EXPECTED SPEND
@@ -55,6 +63,12 @@ Examples:
 
 "Need groceries" →
 {"merchant":null,"brand":null,"category":"Groceries","product":null,"expectedSpend":null,"sortPreference":"BEST_MATCH"}
+
+"restaurants" →
+{"merchant":null,"brand":null,"category":"Food","product":null,"expectedSpend":null,"sortPreference":"BEST_MATCH"}
+
+"dinner coupons" →
+{"merchant":null,"brand":null,"category":"Food","product":"Dinner","expectedSpend":null,"sortPreference":"BEST_MATCH"}
 
 "Buying a phone under ₹50000" →
 {"merchant":null,"brand":null,"category":"Electronics","product":"Phone","expectedSpend":50000,"sortPreference":"BEST_MATCH"}

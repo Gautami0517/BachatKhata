@@ -49,7 +49,10 @@ export class GeminiService {
       errorMessage: 'Failed to extract coupon via Gemini',
     });
 
-    return this.parseAndValidateExtraction(outputText);
+    console.log('[Gemini][text] raw response:', outputText);
+    const extraction = this.parseAndValidateExtraction(outputText);
+    console.log('[Gemini][text] validated extraction:', extraction);
+    return extraction;
   }
 
   /**
@@ -91,7 +94,10 @@ export class GeminiService {
       errorMessage: 'Failed to extract coupon via Gemini',
     });
 
-    return this.parseAndValidateExtraction(outputText);
+    console.log('[Gemini][image] raw response:', outputText);
+    const extraction = this.parseAndValidateExtraction(outputText);
+    console.log('[Gemini][image] validated extraction:', extraction);
+    return extraction;
   }
 
   async generateExplanation(prompt: string): Promise<string> {

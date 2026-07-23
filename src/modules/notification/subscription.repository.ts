@@ -29,6 +29,15 @@ export class SubscriptionRepository {
     });
   }
 
+  deleteByEndpointForUser(
+    endpoint: string,
+    userId: string,
+  ): Promise<Prisma.BatchPayload> {
+    return this.prisma.pushSubscription.deleteMany({
+      where: { endpoint, userId },
+    });
+  }
+
   findByUserId(userId: string): Promise<PushSubscription[]> {
     return this.prisma.pushSubscription.findMany({
       where: { userId },

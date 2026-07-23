@@ -60,4 +60,13 @@ export class CouponPreviewDto {
     example: '[Image import via gpay at 2026-07-22T18:30:00.000Z]',
   })
   rawText!: string;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    type: Number,
+    description:
+      'Preview C-Vault score (0–10). Recalculated on save; not persisted until POST /benefits/save.',
+    example: 9,
+  })
+  benefitScore?: number | null;
 }

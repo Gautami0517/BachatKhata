@@ -39,20 +39,31 @@ Examples of merchant vs brand:
 - "10% Cashback using HDFC Credit Card on Amazon" → merchant=Amazon, brand=null
 
 CATEGORY
-- You may infer category when reasonably clear.
-- Examples: Fashion, Electronics, Travel, Food, Home, Health.
+- category MUST be exactly one of these canonical values (never invent new labels):
+  Fashion, Electronics, Food, Groceries, Travel, Home, Health, Beauty, Other
+- Map niche labels into this list, for example:
+  - Eyewear / glasses / contact lenses / jewellery / apparel / shoes → Fashion
+  - Restaurants / dining / dinner / lunch / cafe → Food
+  - Supermarket / kirana → Groceries
+  - Phones / gadgets / laptops → Electronics
+  - Home appliances / home safety / furniture → Home
+  - Flights / hotels / trips → Travel
+  - Pharmacy / fitness → Health
+  - Makeup / skincare / salon → Beauty
+- If unclear, use Other (do not invent labels like "Eyewear" or "Home Safety").
 
 Other rules:
 1. Infer missing values when reasonably possible for title, category, discountType, and amounts. Do not invent merchant/brand beyond the rules above.
 2. NEVER fabricate coupon codes. Set couponCode to null unless an explicit code appears.
 3. NEVER fabricate expiry dates. Set expiryDate to null unless an explicit expiry is stated.
-4. If expiry is relative (e.g. "Expires in 25 days"), compute an ISO-8601 UTC datetime from today's date into expiryDate.
-5. If expiry is absolute, return ISO-8601 (YYYY-MM-DD or full datetime) in expiryDate.
-6. discountType should be one of: PERCENTAGE, FLAT, CASHBACK, FREEBIE, OTHER when clear; otherwise null.
-7. discountValue for percentage is the percent number (e.g. 38 for 38% OFF). For flat/cashback use numeric amount without currency symbols.
-8. Strip currency symbols from numeric fields.
-9. title should briefly describe the offer or product when possible.
-10. source may be null unless the text itself states an origin.`;
+4. If expiry is relative (e.g. "Expires in 25 days" or "Expires in 2 hours"), compute an ISO-8601 datetime from today's date/time into expiryDate.
+5. If expiry is "today", "expires today", or only a calendar date (YYYY-MM-DD) with no time, return that calendar date at END OF DAY India time as ISO-8601, e.g. 2026-07-23T23:59:59.999+05:30 — NEVER start-of-day / midnight.
+6. If expiry is an absolute datetime with an explicit time, keep that time.
+7. discountType should be one of: PERCENTAGE, FLAT, CASHBACK, FREEBIE, OTHER when clear; otherwise null.
+8. discountValue for percentage is the percent number (e.g. 38 for 38% OFF). For flat/cashback use numeric amount without currency symbols.
+9. Strip currency symbols from numeric fields.
+10. title should briefly describe the offer or product when possible.
+11. source may be null unless the text itself states an origin.`;
 
 export function buildCouponTextExtractionPrompt(
   rawText: string,

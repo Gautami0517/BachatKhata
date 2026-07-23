@@ -30,7 +30,7 @@ export class AskService {
         totalResults: 0,
         results: [],
         matchType: null,
-        message: NO_RESULTS_MESSAGE,
+        message: message ?? NO_RESULTS_MESSAGE,
       };
     }
 
@@ -58,6 +58,7 @@ export class AskService {
       maximumDiscount: coupon.maximumDiscount,
       couponCode: coupon.couponCode,
       expiryDate: coupon.expiryDate,
+      benefitScore: coupon.benefitScore,
       score: coupon.score,
     };
   }

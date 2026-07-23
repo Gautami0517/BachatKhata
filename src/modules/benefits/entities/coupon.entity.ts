@@ -15,6 +15,9 @@ export type CouponEntity = {
   couponCode: string | null;
   expiryDate: Date | null;
   expiryNotificationSentAt: Date | null;
+  isUsed: boolean;
+  usedAt: Date | null;
+  benefitScore: number | null;
   source: string | null;
   rawText: string;
   createdAt: Date;

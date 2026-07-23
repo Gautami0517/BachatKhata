@@ -69,6 +69,14 @@ export class CouponResponseDto {
   })
   usedAt!: Date | null;
 
+  @ApiPropertyOptional({
+    nullable: true,
+    type: Number,
+    description: 'Deterministic C-Vault usefulness score (0–10).',
+    example: 9,
+  })
+  benefitScore!: number | null;
+
   @ApiProperty()
   rawText!: string;
 

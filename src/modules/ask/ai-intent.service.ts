@@ -6,6 +6,10 @@ import {
 import { ZodError } from 'zod';
 import { GeminiService } from '../ai/gemini.service';
 import { normalizeProperName } from '../benefits/normalizers/coupon.normalizer';
+import {
+  categoryFromQueryText,
+  resolveCategory,
+} from '../../common/categories/categories';
 import { AskIntent } from './dto/ask-intent.interface';
 import { askIntentResponseSchema } from './dto/ask-intent.response-schema';
 import { askIntentSchema } from './dto/ask-intent.schema';
@@ -36,7 +40,7 @@ export class AIIntentService {
 
     try {
       const intent = askIntentSchema.parse(parsed);
-      return this.normalizeIntent(intent);
+      return this.normalizeIntent(intent, query);
     } catch (error) {
       if (error instanceof ZodError) {
         this.logger.warn(
@@ -51,12 +55,30 @@ export class AIIntentService {
     }
   }
 
-  private normalizeIntent(intent: AskIntent): AskIntent {
+  private normalizeIntent(intent: AskIntent, query: string): AskIntent {
+    const merchant = normalizeProperName(intent.merchant);
+    const brand = normalizeProperName(intent.brand);
+    const product = normalizeProperName(intent.product);
+
+    let category = resolveCategory({
+      category: intent.category,
+      merchant,
+      brand,
+      title: product,
+    });
+
+    // If Gemini left category empty, infer from query / product synonyms
+    // (e.g. "restaurants", "dinner" → Food).
+    if (!category) {
+      category =
+        categoryFromQueryText(query) ?? categoryFromQueryText(product);
+    }
+
     return {
-      merchant: normalizeProperName(intent.merchant),
-      brand: normalizeProperName(intent.brand),
-      category: normalizeProperName(intent.category),
-      product: normalizeProperName(intent.product),
+      merchant,
+      brand,
+      category,
+      product,
       expectedSpend: intent.expectedSpend,
       sortPreference: intent.sortPreference ?? 'BEST_MATCH',
     };

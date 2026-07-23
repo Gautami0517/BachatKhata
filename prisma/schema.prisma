@@ -41,6 +41,7 @@ model Coupon {
   expiryNotificationSentAt  DateTime?    @db.Timestamptz(3)
   isUsed          Boolean      @default(false)
   usedAt          DateTime?    @db.Timestamptz(3)
+  benefitScore    Int?
   source          String?
   rawText         String
   createdAt       DateTime     @default(now()) @db.Timestamptz(3)
@@ -53,6 +54,7 @@ model Coupon {
   @@index([brand])
   @@index([userId])
   @@index([isUsed])
+  @@index([benefitScore])
   @@index([expiryNotificationSentAt])
   @@map("coupons")
 }
@@ -87,7 +89,8 @@ model RefreshToken {
 
 model PushSubscription {
   id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @default("default")
+  /// Authenticated user id (UUID string). Required for per-user expiry pushes.
+  userId    String
   endpoint  String   @unique
   p256dh    String
   auth      String

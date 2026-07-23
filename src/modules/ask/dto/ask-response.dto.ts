@@ -63,6 +63,14 @@ export class AskResultDto {
   @ApiPropertyOptional({ nullable: true, type: String, format: 'date-time' })
   expiryDate!: Date | null;
 
+  @ApiPropertyOptional({
+    nullable: true,
+    type: Number,
+    description: 'Deterministic C-Vault usefulness score (0–10)',
+    example: 9,
+  })
+  benefitScore!: number | null;
+
   @ApiProperty({
     description: 'Deterministic relevance score from SearchRanker',
     example: 96,
