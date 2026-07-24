@@ -33,6 +33,8 @@ export function normalizeCouponExtraction(
 
   const merchant = normalizeProperName(extraction.merchant);
   const brand = normalizeProperName(extraction.brand);
+  const expiryDate = normalizeExpiry(extraction.expiryDate);
+  assertNotExpired(expiryDate);
 
   return {
     user: { connect: { id: context.userId } },
@@ -50,7 +52,7 @@ export function normalizeCouponExtraction(
     minimumSpend,
     maximumDiscount,
     couponCode: emptyToNull(extraction.couponCode),
-    expiryDate: normalizeExpiry(extraction.expiryDate),
+    expiryDate,
     source:
       emptyToNull(context.source) ??
       emptyToNull(extraction.source) ??
@@ -142,6 +144,19 @@ function normalizeExpiry(value: string | null): Date | null {
   }
 
   return parsed;
+}
+
+/** Reject past expiries on import/save. No expiry (null) is still allowed. */
+function assertNotExpired(expiryDate: Date | null): void {
+  if (expiryDate == null) {
+    return;
+  }
+
+  if (expiryDate.getTime() < Date.now()) {
+    throw new UnprocessableEntityException(
+      'This benefit has already expired and cannot be imported',
+    );
+  }
 }
 
 /**

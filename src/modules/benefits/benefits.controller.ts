@@ -325,7 +325,8 @@ export class BenefitsController {
   @ApiCreatedResponse({ type: CouponResponseDto })
   @ApiBadRequestResponse({ description: 'Invalid request body' })
   @ApiUnprocessableEntityResponse({
-    description: 'Coupon failed normalization (e.g. missing title)',
+    description:
+      'Coupon failed normalization (e.g. missing title, or expiry already in the past)',
   })
   saveExtraction(
     @Body() dto: SaveExtractedDto,
@@ -344,7 +345,8 @@ export class BenefitsController {
   @ApiCreatedResponse({ type: CouponResponseDto })
   @ApiBadRequestResponse({ description: 'Invalid request body' })
   @ApiUnprocessableEntityResponse({
-    description: 'Extracted coupon failed validation',
+    description:
+      'Extracted coupon failed validation (e.g. missing title, or expiry already in the past)',
   })
   @ApiBadGatewayResponse({
     description: 'AI provider returned an unusable response',
